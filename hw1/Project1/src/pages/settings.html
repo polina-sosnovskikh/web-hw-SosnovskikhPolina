@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Время Цвести — настройки профиля, уведомлений и обратная связь">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="icon" type="image/png" href="../assets/icon.png">
+  <title>Время Цвести: Настройки</title>
+</head>
+<body>
+
+  <input type="checkbox" id="menu-toggle" class="menu-toggle" hidden>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__inner">
+      <a class="header__logo" href="landing.html" aria-label="Время Цвести — главная страница">
+        <span class="header__logo-text">Время Цвести</span>
+      </a>
+      <nav class="nav nav--desktop" aria-label="Основная навигация">
+        <a class="nav__link" href="index.html">Главная</a>
+        <a class="nav__link" href="forecast.html">Прогноз</a>
+        <a class="nav__link" href="map.html">Карта</a>
+        <a class="nav__link" href="community.html">Сообщество</a>
+        <a class="nav__link nav__link--active" href="settings.html" aria-current="page">Настройки</a>
+      </nav>
+
+       <label for="menu-toggle" class="header__burger" aria-label="Открыть меню">
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+      </label>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="settings-grid">
+      
+      <!-- LEFT COLUMN -->
+      <div class="settings-left">
+        
+        <!-- PROFILE -->
+        <section class="profile" aria-label="Профиль пользователя">
+          <div class="profile__avatar-wrap">
+            <img class="profile__avatar" src="../assets/avatar.png" alt="Аватар пользователя Полина">
+            <button class="profile__edit-btn" type="button" aria-label="Изменить аватар">
+              <img class="profile__edit-icon" src="../assets/edit.png" alt="">
+            </button>
+          </div>
+          <h1 class="profile__name">полина</h1>
+          <p class="profile__since">С Цвести с 2026 года</p>
+        </section>
+
+        <!-- ALLERGENS -->
+        <section class="allergens" aria-labelledby="allergens-title">
+          <h2 class="allergens__title" id="allergens-title">мои аллергены</h2>
+          <span class="allergens__count">2 активны</span>
+          
+          <div class="allergens__list">
+            <div class="allergen-tag">
+              <span class="allergen-tag__text">Берёза</span>
+              <button class="allergen-tag__remove" type="button" aria-label="Удалить аллерген Берёза">
+                <span class="allergen-tag__remove-icon">×</span>
+              </button>
+            </div>
+            
+            <div class="allergen-tag">
+              <span class="allergen-tag__text">Ольха</span>
+              <button class="allergen-tag__remove" type="button" aria-label="Удалить аллерген Ольха">
+                <span class="allergen-tag__remove-icon">×</span>
+              </button>
+            </div>
+            
+            <button class="allergen-tag allergen-tag--add" type="button" aria-label="Добавить аллерген">
+              <span class="allergen-tag__text">+ Добавить</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- SETTINGS MENU -->
+        <section class="settings-menu" aria-label="Настройки">
+          <h2 class="settings-menu__title">НАСТРОЙКИ</h2>
+          
+          <ul class="settings-menu__list">
+            <li class="settings-menu__item">
+              <div class="settings-menu__icon-wrap settings-menu__icon-wrap--yellow">
+                <img class="settings-menu__icon" src="../assets/bell.png" alt="">
+              </div>
+              <span class="settings-menu__label">Уведомления</span>
+              <label class="toggle">
+                <input type="checkbox" class="toggle__input" checked>
+                <span class="toggle__slider"></span>
+              </label>
+            </li>
+            
+            <li class="settings-menu__item">
+              <div class="settings-menu__icon-wrap settings-menu__icon-wrap--gray">
+                <img class="settings-menu__icon" src="../assets/lock.png" alt="">
+              </div>
+              <span class="settings-menu__label">Конфиденциальность</span>
+              <button class="settings-menu__arrow-btn" type="button" aria-label="Перейти к настройкам конфиденциальности">
+      <span class="settings-menu__arrow-icon" >›</span>
+      </button>
+            </li>
+            
+            <li class="settings-menu__item">
+              <div class="settings-menu__icon-wrap settings-menu__icon-wrap--green">
+                <img class="settings-menu__icon" src="../assets/language.png" alt="">
+              </div>
+              <span class="settings-menu__label">Язык</span>
+              <span class="settings-menu__value">Русский</span>
+              <button class="settings-menu__arrow-btn" type="button" aria-label="Выбрать язык">
+      <span class="settings-menu__arrow-icon" >›</span>
+    </button>
+            </li>
+            
+            <li class="settings-menu__item">
+              <div class="settings-menu__icon-wrap settings-menu__icon-wrap--gray">
+                <img class="settings-menu__icon" src="../assets/info.png" alt="">
+              </div>
+              <span class="settings-menu__label">Помощь и справка</span>
+             <button class="settings-menu__arrow-btn" type="button" aria-label="Перейти к справке">
+      <span class="settings-menu__arrow-icon" >›</span>
+    </button>
+            </li>
+          </ul>
+        </section>
+
+        <!-- LOGOUT -->
+        <button class="logout-btn" type="button">
+          <img class="logout-btn__icon" src="../assets/exit.png" alt="">
+          <span class="logout-btn__text">Выйти из аккаунта</span>
+        </button>
+
+                <!-- MASCOT CHARACTER -->
+        <div class="settings-mascot" aria-hidden="true">
+          <img class="settings-mascot__image" src="../assets/settings_pyla.png" alt="">
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="settings-right">
+        
+        <!-- CONTACT SUPPORT -->
+        <section class="contact-support" aria-labelledby="contact-title">
+          <h2 class="contact-support__title">Связаться с командой</h2>
+          <p class="contact-support__subtitle">
+            Оставьте свои контакты или напишите специалистам напрямую:
+          </p>
+          
+          <div class="contact-support__form">
+            <label class="contact-support__label" for="contact-input">
+              Ваш контакт для связи (Email или Telegram)
+            </label>
+            <div class="contact-support__input-wrap">
+    <img class="contact-support__input-icon" src="../assets/email.png" alt="" aria-hidden="true">
+            <input 
+              class="contact-support__input" 
+              type="text" 
+              id="contact-input" 
+              value="anya.blossom@gmail.com"
+              aria-label="Ваш контакт для связи"
+            >
+          </div>
+</div>
+          <ul class="contact-support__list">
+            <li class="contact-support__item">
+              <div class="contact-support__item-icon-wrap contact-support__item-icon-wrap--yellow">
+                <img class="contact-support__item-icon" src="../assets/tg.png" alt="">
+              </div>
+              <div class="contact-support__item-content">
+                <span class="contact-support__item-title">Чат поддержки в Telegram</span>
+                <span class="contact-support__item-value">@tsveti_care</span>
+              </div>
+                 <button class="contact-support__item-btn" type="button" aria-label="Написать в Telegram">
+      <span class="settings-menu__arrow-icon" >›</span>
+    </button>
+            </li>
+            
+            <li class="contact-support__item">
+              <div class="contact-support__item-icon-wrap contact-support__item-icon-wrap--yellow">
+                <img class="contact-support__item-icon" src="../assets/letter.png" alt="">
+              </div>
+              <div class="contact-support__item-content">
+                <span class="contact-support__item-title">Почта заботы</span>
+                <span class="contact-support__item-value">care@vremyatsvesti.ru</span>
+              </div>
+               <button class="contact-support__item-btn" type="button" aria-label="Отправить email">
+      <span class="settings-menu__arrow-icon" >›</span>
+    </button>
+            </li>
+            
+            <li class="contact-support__item">
+              <div class="contact-support__item-icon-wrap contact-support__item-icon-wrap--red">
+                <img class="contact-support__item-icon" src="../assets/phone.png" alt="">
+              </div>
+              <div class="contact-support__item-content">
+                <span class="contact-support__item-title">Горячая линия аллергологов</span>
+                <span class="contact-support__item-value">8 (800) 555-35-42 (звонок бесплатный)</span>
+              </div>
+               <button class="contact-support__item-btn" type="button" aria-label="Позвонить на горячую линию">
+     <span class="settings-menu__arrow-icon" >›</span>
+    </button>
+            </li>
+          </ul>
+        </section>
+
+        <!-- SURVEY -->
+        <section class="survey" aria-labelledby="survey-title">
+          <h2 class="survey__title">опрос</h2>
+          
+          <div class="survey__question">
+            <p class="survey__question-text">Насколько приложение помогает справляться с сезоном?</p>
+            
+<div class="survey__rating-wrapper" role="group" aria-label="Оценка от 1 до 5">
+  <button class="survey__rating-btn" type="button" aria-label="Оценка 1">1</button>
+  <button class="survey__rating-btn" type="button" aria-label="Оценка 2">2</button>
+  <button class="survey__rating-btn" type="button" aria-label="Оценка 3">3</button>
+  <button class="survey__rating-btn" type="button" aria-label="Оценка 4">4</button>
+  <button class="survey__rating-btn survey__rating-btn--active" type="button" aria-label="Оценка 5" aria-pressed="true">5</button>
+  
+  <div class="survey__rating-labels">
+    <span class="survey__rating-label">Отлично помогает</span>
+    <span class="survey__rating-label">Совсем не помогает</span>
+  </div>
+</div>
+
+          <div class="survey__question">
+            <p class="survey__question-text">Что для вас самое полезное?</p>
+            <p class="survey__question-subtext">Отметьте один или несколько пунктов:</p>
+            
+            <div class="survey__checkboxes">
+              <label class="survey__checkbox">
+                <input type="checkbox" class="survey__checkbox-input" checked>
+                <span class="survey__checkbox-text">Календарь пыльцы</span>
+              </label>
+              
+              <label class="survey__checkbox">
+                <input type="checkbox" class="survey__checkbox-input" checked>
+                <span class="survey__checkbox-text">Дневник симптомов</span>
+              </label>
+              
+              <label class="survey__checkbox">
+                <input type="checkbox" class="survey__checkbox-input">
+                <span class="survey__checkbox-text">Советы аллерголога</span>
+              </label>
+              
+              <label class="survey__checkbox">
+                <input type="checkbox" class="survey__checkbox-input">
+                <span class="survey__checkbox-text">Карта самочувствия</span>
+              </label>
+              
+              <label class="survey__checkbox">
+                <input type="checkbox" class="survey__checkbox-input">
+                <span class="survey__checkbox-text">Уведомления о ветре</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="survey__submit-btn" type="button">
+            отправить отзыв
+          </button>
+        </section>
+
+      </div>
+
+    </div>
+  </main>
+
+  <label for="menu-toggle" class="mobile-overlay" aria-hidden="true"></label>
+
+  <!-- Боковое меню -->
+<nav class="mobile-menu" aria-label="Мобильная навигация">
+  <a class="mobile-menu__link" href="index.html">Главная</a>
+  <a class="mobile-menu__link" href="forecast.html">Прогноз</a>
+  <a class="mobile-menu__link" href="map.html">Карта</a>
+  <a class="mobile-menu__link" href="community.html">Сообщество</a>
+  <a class="mobile-menu__link mobile-menu__link--active" href="settings.html">Настройки</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Время Цвести — карта концентрации пыльцы и симптомов аллергии">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="icon" type="image/png" href="../assets/icon.png">
+  <title>Время Цвести: Карта</title>
+</head>
+<body>
+
+  <input type="checkbox" id="menu-toggle" class="menu-toggle" hidden>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__inner">
+      <a class="header__logo" href="landing.html" aria-label="Время Цвести — главная страница">
+        <span class="header__logo-text">Время Цвести</span>
+      </a>
+      <nav class="nav nav--desktop" aria-label="Основная навигация">
+        <a class="nav__link" href="index.html">Главная</a>
+        <a class="nav__link" href="forecast.html">Прогноз</a>
+        <a class="nav__link nav__link--active" href="map.html" aria-current="page">Карта</a>
+        <a class="nav__link" href="community.html">Сообщество</a>
+        <a class="nav__link" href="settings.html">Настройки</a>
+      </nav>
+
+ <label for="menu-toggle" class="header__burger" aria-label="Открыть меню">
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+      </label>
+
+    </div>
+  </header>
+
+ <!-- DATE -->
+<section class="date-bar" aria-label="Выбранная дата">
+  <div class="date-bar__inner">
+    <img class="date-bar__mascot" src="../assets/map_pyla.png" alt="">
+    <h1 class="date-bar__text">Пятница, <span class="date-number">17</span> мая</h1>
+  </div>
+</section>
+
+  <!-- MAP TYPE TABS -->
+  <section class="map-tabs" aria-label="Тип карты">
+    <div class="map-tabs__list" role="tablist" aria-label="Выбор типа карты">
+      <button class="map-tabs__tab map-tabs__tab--active" type="button" role="tab" aria-selected="true">
+        карта пыльцы
+      </button>
+      <button class="map-tabs__tab" type="button" role="tab" aria-selected="false">
+        карта симптомов
+      </button>
+    </div>
+  </section>
+
+  <!-- POLLEN TYPE SELECTOR -->
+  <section class="pollen-selector" aria-label="Выбор вида пыльцы">
+    <div class="pollen-selector__list" role="group" aria-label="Виды пыльцы">
+      <button class="pollen-selector__btn" type="button" aria-pressed="false">Берёза</button>
+      <button class="pollen-selector__btn" type="button" aria-pressed="false">Ольха</button>
+      <button class="pollen-selector__btn" type="button" aria-pressed="false">Злаки</button>
+      <button class="pollen-selector__btn" type="button" aria-pressed="false">Дуб</button>
+      <button class="pollen-selector__btn" type="button" aria-pressed="false">Лещина</button>
+    </div>
+  </section>
+
+  <!-- SEARCH -->
+  <form class="search" role="search">
+    <label class="search__label">
+      <img class="search__icon" src="../assets/search_main.png" alt="">
+      <input 
+        class="search__input" 
+        type="search" 
+        name="location" 
+        placeholder="Поиск района или адреса" 
+        aria-label="Поиск района или адреса" 
+        autocomplete="street-address"
+      >
+    </label>
+  </form>
+
+  <!-- MAP AREA -->
+  <main class="map-area">
+    <section class="map" aria-label="Карта концентрации пыльцы">
+      
+      <!-- Map Background Layers -->
+      <div class="map__layers" aria-hidden="true">
+        <div class="map__concentration"></div>
+        <div class="map__blur map__blur--1"></div>
+        <div class="map__blur map__blur--2"></div>
+        <div class="map__blur map__blur--3"></div>
+      </div>
+      
+      <img class="map__vector" src="../assets/grid_map.png" alt="">
+      <img class="map__image" src="../assets/zone_map.png" alt="Карта Санкт-Петербурга с зонами концентрации пыльцы">
+
+      <!-- LEGEND -->
+      <aside class="map-legend" aria-label="Легенда карты">
+        <div class="map-legend__inner">
+          <h2 class="map-legend__title">Концентрация пыльцы</h2>
+          <ul class="map-legend__list" role="list">
+            <li class="map-legend__item" role="listitem">
+              <span class="map-legend__color map-legend__color--high" aria-hidden="true"></span>
+              <span class="map-legend__label">Высокая</span>
+            </li>
+            <li class="map-legend__item" role="listitem">
+              <span class="map-legend__color map-legend__color--medium" aria-hidden="true"></span>
+              <span class="map-legend__label">Умеренная</span>
+            </li>
+            <li class="map-legend__item" role="listitem">
+              <span class="map-legend__color map-legend__color--low" aria-hidden="true"></span>
+              <span class="map-legend__label">Низкая</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- LOCATION INFO -->
+      <section class="map-location" aria-label="Информация о местоположении">
+        <div class="map-location__inner">
+          <h1 class="map-location__city">Санкт-Петербург</h1>
+          <p class="map-location__time">Обновлено: 10:45</p>
+        </div>
+      </section>
+
+      <!-- MAP CONTROLS -->
+      <div class="map-controls" aria-label="Управление масштабом карты">
+        <button class="map-controls__btn" type="button" aria-label="Увеличить масштаб">
+          <span class="map-controls__btn-icon" aria-hidden="true">+</span>
+        </button>
+        <button class="map-controls__btn" type="button" aria-label="Уменьшить масштаб">
+          <span class="map-controls__btn-icon" aria-hidden="true">−</span>
+        </button>
+        <button class="map-controls__btn map-controls__btn--geo" type="button" aria-label="Определить местоположение">
+          <img class="map-controls__geo-icon" src="../assets/location.png" alt="" aria-hidden="true">
+        </button>
+      </div>
+
+    </section>
+  </main>
+
+  <label for="menu-toggle" class="mobile-overlay" aria-hidden="true"></label>
+
+  <!-- Боковое меню -->
+<nav class="mobile-menu" aria-label="Мобильная навигация">
+  <a class="mobile-menu__link" href="index.html">Главная</a>
+  <a class="mobile-menu__link" href="forecast.html">Прогноз</a>
+  <a class="mobile-menu__link mobile-menu__link--active" href="map.html">Карта</a>
+  <a class="mobile-menu__link" href="community.html">Сообщество</a>
+  <a class="mobile-menu__link" href="settings.html">Настройки</a>
+</nav>
+
+</body>
+</html>
