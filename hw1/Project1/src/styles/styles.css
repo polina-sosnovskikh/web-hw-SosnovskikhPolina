@@ -820,13 +820,13 @@ body {
   gap: var(--отступ-большой);
 }
 
-.settings-left {
+.settings-profile {
   display: flex;
   flex-direction: column;
   gap: var(--отступ-большой);
 }
 
-.settings-right {
+.settings-interact {
   display: flex;
   flex-direction: column;
   gap: var(--отступ-большой);
@@ -1006,15 +1006,19 @@ body {
   flex-shrink: 0;
 }
 
-.settings-menu__icon-wrap--yellow {
+.settings-menu__icon-wrap--bell {
   background-color: var(--жёлтый);
 }
 
-.settings-menu__icon-wrap--gray {
+.settings-menu__icon-wrap--lock {
   background-color: var(--серый);
 }
 
-.settings-menu__icon-wrap--green {
+.settings-menu__icon-wrap--info {
+  background-color: var(--серый);
+}
+
+.settings-menu__icon-wrap--language {
   background-color: var(--мятный);
 }
 
@@ -1221,11 +1225,15 @@ body {
   flex-shrink: 0;
 }
 
-.contact-support__item-icon-wrap--yellow {
+.contact-support__item-icon-wrap--tg {
   background-color: var(--жёлтый);
 }
 
-.contact-support__item-icon-wrap--red {
+.contact-support__item-icon-wrap--letter {
+  background-color: var(--жёлтый);
+}
+
+.contact-support__item-icon-wrap--phone {
   background-color: var(--красный);
 }
 
@@ -1856,7 +1864,7 @@ body {
   background-color: var(--жёлтый-светлый);
 }
 
-.dashboard-left {
+.dashboard-state {
   display: flex;
   flex-direction: column;
   gap: var(--отступ-большой);
@@ -1996,7 +2004,7 @@ body {
   transform: scale(1.05);
 }
 
-.dashboard-right {
+.dashboard-report {
   display: flex;
   flex-direction: column;
   gap: var(--отступ-большой);
