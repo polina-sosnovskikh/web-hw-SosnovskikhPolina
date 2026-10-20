@@ -176,15 +176,36 @@ function renderResults(results, container) {
     results.sort((a, b) => b.date.localeCompare(a.date));
 
     container.innerHTML = results
-        .map((r, i) => `
-            <div class="search-result" data-index="${i}" data-date="${r.date}">
-                <div class="search-result__icon">${r.type === 'symptom' ? '🤒' : '💊'}</div>
-                <div class="search-result__info">
-                    <div class="search-result__title">${r.title}</div>
-                    <div class="search-result__subtitle">${formatDateHuman(r.date)} • ${r.subtitle}</div>
-                </div>
-            </div>
-        `)
+        .map((r) => {
+            // Создаём элементы через DOM API — это безопасно от XSS
+            const div = document.createElement('div');
+            div.className = 'search-result';
+            div.dataset.date = r.date;
+            div.dataset.type = r.type;
+            div.dataset.id = r.id || '';
+            
+            const icon = document.createElement('div');
+            icon.className = 'search-result__icon';
+            icon.textContent = r.type === 'symptom' ? '🤒' : '💊';
+            
+            const info = document.createElement('div');
+            info.className = 'search-result__info';
+            
+            const title = document.createElement('div');
+            title.className = 'search-result__title';
+            title.textContent = r.title; // textContent автоматически экранирует
+            
+            const subtitle = document.createElement('div');
+            subtitle.className = 'search-result__subtitle';
+            subtitle.textContent = `${formatDateHuman(r.date)} • ${r.subtitle}`; // тоже безопасно
+            
+            info.appendChild(title);
+            info.appendChild(subtitle);
+            div.appendChild(icon);
+            div.appendChild(info);
+            
+            return div.outerHTML;
+        })
         .join('');
 
     // Клик по результату — переходим на этот день
@@ -192,7 +213,6 @@ function renderResults(results, container) {
         el.addEventListener('click', () => {
             const date = el.dataset.date;
             goToDate(date);
-            // Закрываем модалку
             el.closest('.search-modal-overlay').querySelector('.search-modal__close').click();
         });
     });

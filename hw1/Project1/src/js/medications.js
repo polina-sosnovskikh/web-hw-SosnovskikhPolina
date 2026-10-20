@@ -244,6 +244,10 @@ function showAddMedicationForm() {
     const list = document.getElementById('medications-list');
     if (!list) return;
 
+    // Проверяем, нет ли уже открытой формы
+    const existingForm = document.getElementById('inline-add-form');
+    if (existingForm) return; // Если форма уже есть — не создаём новую
+
     const formHTML = `
         <div class="medication-add-form" id="inline-add-form">
             <input type="time" class="medication-add-form__time" id="new-med-time" value="09:00">
@@ -257,10 +261,22 @@ function showAddMedicationForm() {
     `;
     list.insertAdjacentHTML('beforeend', formHTML);
 
-    document.getElementById('add-med-btn').addEventListener('click', addMedication);
-    document.getElementById('cancel-add-btn').addEventListener('click', () => {
-        document.getElementById('inline-add-form').remove();
-    });
+    // Привязываем обработчики ВНУТРИ созданного контейнера
+    const formContainer = document.getElementById('inline-add-form');
+    if (formContainer) {
+        const addBtn = formContainer.querySelector('#add-med-btn');
+        const cancelBtn = formContainer.querySelector('#cancel-add-btn');
+        
+        if (addBtn) {
+            addBtn.addEventListener('click', addMedication);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                const form = document.getElementById('inline-add-form');
+                if (form) form.remove();
+            });
+        }
+    }
 }
 
 function toggleMedication(medId, isTaken) {
