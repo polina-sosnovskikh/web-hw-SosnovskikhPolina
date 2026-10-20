@@ -1,8 +1,20 @@
-import { getDayData, saveDayData, getViewDate, getTodayString, formatDate } from './storage.js';
+import { getDayData, saveDayData, getTodayString, formatDate, getViewDate } from './storage.js';
 
 // ========================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ========================================
+
+// Экранирование HTML для защиты от XSS
+function escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/[&<>"']/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    }[tag]));
+}
 
 // Формируем умный текст для бейджа в зависимости от выбранной даты
 function getBadgeText(takenCount, totalCount) {
@@ -35,7 +47,7 @@ function getBadgeText(takenCount, totalCount) {
 }
 
 // ========================================
-// МОДАЛЬНОЕ ОКНО
+// МОДАЛЬНОЕ ОКНО (встроено в файл)
 // ========================================
 function showMedicationModal({ title = 'Уведомление', message = '', confirmText = 'Понятно' } = {}) {
     return new Promise((resolve) => {
@@ -52,11 +64,11 @@ function showMedicationModal({ title = 'Уведомление', message = '', c
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-                <h3 class="med-modal__title">${title}</h3>
-                ${message ? `<p class="med-modal__message">${message}</p>` : ''}
+                <h3 class="med-modal__title">${escapeHTML(title)}</h3>
+                ${message ? `<p class="med-modal__message">${escapeHTML(message)}</p>` : ''}
                 <div class="med-modal__buttons">
                     <button class="med-modal__btn med-modal__btn--confirm" data-action="confirm">
-                        ${confirmText}
+                        ${escapeHTML(confirmText)}
                     </button>
                 </div>
             </div>
@@ -182,19 +194,20 @@ export function renderMedications() {
         badge.textContent = getBadgeText(takenCount, medications.length);
     }
 
+    // ИСПРАВЛЕНО: все пользовательские данные экранируются через escapeHTML
     list.innerHTML = medications
         .map(
             (med) => `
-                <div class="medication-item" data-med-id="${med.id}">
+                <div class="medication-item" data-med-id="${escapeHTML(med.id)}">
                     <div class="medication-item__check">
-                        <input type="checkbox" class="medication-item__input" id="med-${med.id}" ${med.taken ? 'checked' : ''}>
-                        <label class="medication-item__checkbox" for="med-${med.id}"></label>
+                        <input type="checkbox" class="medication-item__input" id="med-${escapeHTML(med.id)}" ${med.taken ? 'checked' : ''}>
+                        <label class="medication-item__checkbox" for="med-${escapeHTML(med.id)}"></label>
                     </div>
                     <div class="medication-item__content">
-                        <div class="medication-item__time">${med.time} — ${med.name}</div>
-                        <div class="medication-item__desc">${med.dose} • ${med.taken ? 'Принято' : 'Ожидает'}</div>
+                        <div class="medication-item__time">${escapeHTML(med.time)} — ${escapeHTML(med.name)}</div>
+                        <div class="medication-item__desc">${escapeHTML(med.dose)} • ${med.taken ? 'Принято' : 'Ожидает'}</div>
                     </div>
-                    <button class="medication-item__more" data-remove-med="${med.id}" type="button" aria-label="Удалить">×</button>
+                    <button class="medication-item__more" data-remove-med="${escapeHTML(med.id)}" type="button" aria-label="Удалить">×</button>
                 </div>
             `
         )

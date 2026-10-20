@@ -1,7 +1,6 @@
 // ========================================
 // УНИВЕРСАЛЬНАЯ СИСТЕМА МОДАЛЬНЫХ ОКОН
 // ========================================
-
 function showModal({ type = 'alert', title = '', message = '', placeholder = '', defaultValue = '', confirmText = 'Понятно', cancelText = 'Отмена' } = {}) {
     return new Promise((resolve) => {
         // Удаляем старые модалки, если есть
@@ -10,38 +9,35 @@ function showModal({ type = 'alert', title = '', message = '', placeholder = '',
 
         const overlay = document.createElement('div');
         overlay.className = 'settings-modal-overlay';
-
         let inputHTML = '';
         if (type === 'prompt') {
             inputHTML = `
                 <input 
                     type="text" 
                     class="settings-modal__input" 
-                    placeholder="${placeholder}" 
-                    value="${defaultValue}"
+                    placeholder="${escapeHTML(placeholder)}" 
+                    value="${escapeHTML(defaultValue)}"
                     autocomplete="off"
                 >
             `;
         }
-
         let buttonsHTML = '';
         if (type === 'alert') {
             buttonsHTML = `
                 <button class="settings-modal__btn settings-modal__btn--confirm" data-action="confirm">
-                    ${confirmText}
+                    ${escapeHTML(confirmText)}
                 </button>
             `;
         } else {
             buttonsHTML = `
                 <button class="settings-modal__btn settings-modal__btn--cancel" data-action="cancel">
-                    ${cancelText}
+                    ${escapeHTML(cancelText)}
                 </button>
                 <button class="settings-modal__btn settings-modal__btn--confirm" data-action="confirm">
-                    ${confirmText}
+                    ${escapeHTML(confirmText)}
                 </button>
             `;
         }
-
         overlay.innerHTML = `
             <div class="settings-modal">
                 <button class="settings-modal__close" type="button" aria-label="Закрыть">
@@ -50,20 +46,17 @@ function showModal({ type = 'alert', title = '', message = '', placeholder = '',
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-                <h3 class="settings-modal__title">${title}</h3>
-                ${message ? `<p class="settings-modal__message">${message}</p>` : ''}
+                <h3 class="settings-modal__title">${escapeHTML(title)}</h3>
+                ${message ? `<p class="settings-modal__message">${escapeHTML(message)}</p>` : ''}
                 ${inputHTML}
                 <div class="settings-modal__buttons">
                     ${buttonsHTML}
                 </div>
             </div>
         `;
-
         document.body.appendChild(overlay);
-
         // Блокируем прокрутку
         document.body.style.overflow = 'hidden';
-
         // Анимация появления
         requestAnimationFrame(() => {
             overlay.classList.add('settings-modal-overlay--active');
@@ -154,16 +147,13 @@ function showSettingsConfirm(title, message) {
 // ========================================
 // ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ НАСТРОЕК
 // ========================================
-
 export function initSettings() {
     if (!document.querySelector('.profile')) return;
-
     initProfileEdit();
     initAllergenManagement();
     initToggles();
     initContactForm();
     initSurvey();
-    
     console.log('Настройки инициализированы');
 }
 
@@ -171,18 +161,15 @@ export function initSettings() {
 function initProfileEdit() {
     const editBtn = document.querySelector('.profile__edit-btn');
     if (!editBtn) return;
-
     editBtn.addEventListener('click', async () => {
         const nameEl = document.querySelector('.profile__name');
         const currentName = nameEl ? nameEl.textContent.trim() : '';
-        
         const newName = await showSettingsPrompt(
             'Редактировать профиль', 
             'Введите новое имя:', 
             'Ваше имя', 
             currentName
         );
-        
         if (newName) {
             if (nameEl) {
                 nameEl.textContent = newName;
@@ -191,7 +178,6 @@ function initProfileEdit() {
             await showSettingsAlert('Профиль обновлён', `Ваше имя изменено на "${newName}"`);
         }
     });
-
     // Восстанавливаем имя из localStorage
     const savedName = localStorage.getItem('user_name');
     if (savedName) {
@@ -211,12 +197,10 @@ function initAllergenManagement() {
         if (removeBtn) {
             const tag = removeBtn.closest('.allergen-tag');
             const allergenName = tag.querySelector('.allergen-tag__text').textContent;
-            
             const confirmed = await showSettingsConfirm(
                 'Удалить аллерген', 
                 `Вы уверены, что хотите удалить "${allergenName}"?`
             );
-            
             if (confirmed && tag) {
                 tag.remove();
                 updateAllergenCount();
@@ -226,19 +210,18 @@ function initAllergenManagement() {
     });
 
     // Добавление аллергена
-const addBtn = allergenList.querySelector('.allergen-tag--add');
-if (addBtn) {
-    addBtn.addEventListener('click', async () => {
-        const allergenName = await showSettingsPrompt(
-            'Добавить аллерген', 
-            'Введите название аллергена:', 
-            'Например: Амброзия'
-        );
-        
-        if (allergenName) {
-            addAllergen(allergenName);
-        }
-    });
+    const addBtn = allergenList.querySelector('.allergen-tag--add');
+    if (addBtn) {
+        addBtn.addEventListener('click', async () => {
+            const allergenName = await showSettingsPrompt(
+                'Добавить аллерген',
+                'Введите название аллергена:',
+                'Например: Амброзия'
+            );
+            if (allergenName) {
+                addAllergen(allergenName);
+            }
+        });
     }
 
     loadAllergens();
@@ -247,22 +230,18 @@ if (addBtn) {
 function addAllergen(name) {
     const allergenList = document.querySelector('.allergens__list');
     if (!allergenList) return;
-
     const addBtn = allergenList.querySelector('.allergen-tag--add');
-    
     const tag = document.createElement('div');
     tag.className = 'allergen-tag';
     tag.innerHTML = `
         <span class="allergen-tag__text">${escapeHTML(name)}</span>
         <button class="allergen-tag__remove" type="button" aria-label="Удалить">×</button>
     `;
-    
     if (addBtn) {
         allergenList.insertBefore(tag, addBtn);
     } else {
         allergenList.appendChild(tag);
     }
-    
     updateAllergenCount();
     saveAllergens();
 }
@@ -281,27 +260,48 @@ function saveAllergens() {
         const textEl = tag.querySelector('.allergen-tag__text');
         return textEl ? textEl.textContent : '';
     });
-    localStorage.setItem('user_allergens', JSON.stringify(allergens));
+    try {
+        localStorage.setItem('user_allergens', JSON.stringify(allergens));
+    } catch (e) {
+        console.error('settings.js: ошибка сохранения аллергенов:', e);
+    }
 }
 
+// ИСПРАВЛЕНО: добавлена защита от повреждённых данных
 function loadAllergens() {
     const savedAllergens = localStorage.getItem('user_allergens');
     const allergenList = document.querySelector('.allergens__list');
-    
     if (!allergenList) return;
-    
+
     // Очищаем список аллергенов, оставляя только кнопку "+ Добавить"
     const addBtn = allergenList.querySelector('.allergen-tag--add');
     allergenList.innerHTML = '';
     if (addBtn) {
         allergenList.appendChild(addBtn);
     }
-    
+
     if (savedAllergens) {
-        const allergens = JSON.parse(savedAllergens);
-        allergens.forEach(allergen => addAllergen(allergen));
+        try {
+            const allergens = JSON.parse(savedAllergens);
+            
+            // Валидация: проверяем, что это массив строк
+            if (!Array.isArray(allergens)) {
+                console.warn('settings.js: данные аллергенов повреждены, очищаем');
+                localStorage.removeItem('user_allergens');
+                return;
+            }
+            
+            allergens.forEach(allergen => {
+                if (typeof allergen === 'string' && allergen.trim()) {
+                    addAllergen(allergen.trim());
+                }
+            });
+        } catch (e) {
+            console.error('settings.js: ошибка парсинга аллергенов:', e);
+            localStorage.removeItem('user_allergens');
+        }
     }
-    
+
     updateAllergenCount();
 }
 
@@ -315,7 +315,6 @@ function initToggles() {
             localStorage.setItem(`setting_${settingName}`, isEnabled);
         });
     });
-
     toggles.forEach(toggle => {
         const settingName = toggle.closest('.settings-menu__item').querySelector('.settings-menu__label').textContent;
         const savedState = localStorage.getItem(`setting_${settingName}`);
@@ -329,7 +328,6 @@ function initToggles() {
 function initContactForm() {
     const input = document.querySelector('.contact-support__input');
     if (!input) return;
-
     input.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -343,7 +341,6 @@ function initContactForm() {
 }
 
 // Опрос
-// Опрос
 function initSurvey() {
     const ratingBtns = document.querySelectorAll('.survey__rating-btn');
     const checkboxes = document.querySelectorAll('.survey__checkbox-input');
@@ -353,7 +350,6 @@ function initSurvey() {
     ratingBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const value = parseInt(btn.dataset.value || btn.textContent.trim());
-            
             // Если уже активна — снимаем выделение (toggle)
             if (btn.classList.contains('survey__rating-btn--active')) {
                 btn.classList.remove('survey__rating-btn--active');
@@ -364,7 +360,6 @@ function initSurvey() {
                 );
                 return;
             }
-            
             // Снимаем активность и цвета со всех кнопок
             ratingBtns.forEach(b => {
                 b.classList.remove('survey__rating-btn--active');
@@ -374,10 +369,8 @@ function initSurvey() {
                     'survey__rating-btn--red'
                 );
             });
-            
             // Активируем выбранную кнопку и добавляем нужный цвет
             btn.classList.add('survey__rating-btn--active');
-            
             if (value <= 2) {
                 btn.classList.add('survey__rating-btn--mint');
             } else if (value === 3) {
@@ -398,23 +391,19 @@ function initSurvey() {
                     const textEl = cb.nextElementSibling;
                     return textEl ? textEl.textContent : '';
                 });
-
             if (!selectedRating) {
                 await showSettingsAlert('Оценка не выбрана', 'Пожалуйста, выберите оценку от 1 до 5');
                 return;
             }
-
             if (selectedCheckboxes.length === 0) {
                 await showSettingsAlert('Пункты не выбраны', 'Пожалуйста, отметьте хотя бы один пункт');
                 return;
             }
-
             const rating = selectedRating.textContent;
             await showSettingsAlert(
                 'Спасибо за отзыв!', 
                 `Ваша оценка: ${rating}\n\nПолезное: ${selectedCheckboxes.join(', ')}`
             );
-            
             // Сброс формы
             ratingBtns.forEach(b => {
                 b.classList.remove('survey__rating-btn--active');
@@ -429,13 +418,16 @@ function initSurvey() {
     }
 }
 
+// ========================================
+// ESCAPE HTML (ИСПРАВЛЕНО — защита от XSS)
+// ========================================
 function escapeHTML(str) {
-    return str.replace(/[&<>'"]/g, 
-        tag => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            "'": '&#39;',
-            '"': '&quot;'
-        }[tag]));
+    if (typeof str !== 'string') return '';
+    return str.replace(/[&<>"']/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    }[tag]));
 }

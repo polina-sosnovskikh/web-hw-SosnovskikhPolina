@@ -16,12 +16,23 @@ const currentUser = {
 export function initCommunity() {
     if (!document.querySelector('.feed__list')) return;
     
-    // Сначала загружаем сохранённые посты
-    loadSavedPosts();
+    // 1. Собираем все посты (статические из HTML + сохранённые из localStorage)
+    const allPosts = collectAllPosts();
     
-    // Потом генерируем timestamp для всех постов (и статических, и сохранённых)
-    initPostTimestamps();
+    // 2. Сортируем: новые сверху (по убыванию timestamp)
+    allPosts.sort((a, b) => b.timestamp - a.timestamp);
     
+    // 3. Очищаем ленту
+    const feedList = document.querySelector('.feed__list');
+    feedList.innerHTML = '';
+    
+    // 4. Вставляем посты в правильном порядке
+    allPosts.forEach(post => {
+        const postHTML = buildPostHTML(post);
+        feedList.insertAdjacentHTML('beforeend', postHTML);
+    });
+    
+    // 5. Инициализируем интерактивность
     initLikes();
     initComments();
     initFab();
@@ -29,54 +40,178 @@ export function initCommunity() {
     createPostModal();
     createNotificationModal();
     
-    console.log('Сообщество инициализировано');
+    console.log('Сообщество инициализировано, постов:', allPosts.length);
+}
+
+// ========================================
+// СБОР ВСЕХ ПОСТОВ (статические + сохранённые)
+// ========================================
+function collectAllPosts() {
+    const posts = [];
+    const seenIds = new Set();
+    let staticPostCounter = 0;
+    
+    // 1. Собираем статические посты из HTML
+    const staticPosts = document.querySelectorAll('.post');
+    staticPosts.forEach(post => {
+        // Генерируем id, если его нет
+        let id = post.id;
+        if (!id) {
+            staticPostCounter++;
+            id = 'static-post-' + staticPostCounter;
+            post.id = id; // Сохраняем в DOM
+        }
+        
+        if (seenIds.has(id)) return;
+        
+        const timeEl = post.querySelector('.post__time');
+        const authorEl = post.querySelector('.post__author');
+        const textEl = post.querySelector('.post__text');
+        const avatarEl = post.querySelector('.post__avatar');
+        const likeBtn = post.querySelector('.post__like-btn');
+        const likeCountEl = post.querySelector('.post__like-count');
+        
+        if (!timeEl || !authorEl || !textEl) return;
+        
+        // Вычисляем timestamp из текста времени
+        const timestamp = parseTimeString(timeEl.textContent.trim());
+        
+        // Извлекаем класс аватара и инициал
+        let avatarClass = 'post__avatar--a';
+        let initial = '?';
+        if (avatarEl) {
+            // Получаем все классы кроме 'post__avatar'
+            const classes = avatarEl.className.split(' ').filter(c => c !== 'post__avatar');
+            avatarClass = classes.length > 0 ? classes[0] : 'post__avatar--a';
+            initial = avatarEl.textContent.trim() || '?';
+        }
+        
+        posts.push({
+            id: id,
+            author: authorEl.textContent.trim(),
+            time: timeEl.textContent.trim(),
+            text: textEl.textContent.trim(),
+            avatarClass: avatarClass,
+            initial: initial,
+            timestamp: timestamp,
+            likes: parseInt(likeCountEl?.textContent.trim()) || 0,
+            liked: likeBtn?.classList.contains('post__like-btn--active') || false
+        });
+        
+        seenIds.add(id);
+    });
+    
+    // 2. Добавляем сохранённые посты из localStorage
+    const savedPosts = getPostsFromStorage();
+    savedPosts.forEach(post => {
+        if (!post || typeof post !== 'object') return;
+        if (!post.id || seenIds.has(post.id)) return;
+        if (!post.text || typeof post.text !== 'string') return;
+        if (!post.timestamp || typeof post.timestamp !== 'number') return;
+        
+        posts.push({
+            ...post,
+            time: getRelativeTime(post.timestamp) // Вычисляем актуальное время
+        });
+        
+        seenIds.add(post.id);
+    });
+    
+    return posts;
 }
 
 // ========================================
 // СОХРАНЕНИЕ И ЗАГРУЗКА ПОСТОВ
 // ========================================
 function savePostsToStorage(posts) {
-    localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
+    try {
+        localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
+    } catch (e) {
+        console.error('community.js: ошибка сохранения постов:', e);
+    }
 }
 
 function getPostsFromStorage() {
     try {
         const raw = localStorage.getItem(POSTS_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        if (!raw) return [];
+        
+        const parsed = JSON.parse(raw);
+        
+        if (!Array.isArray(parsed)) {
+            console.warn('community.js: данные постов повреждены, очищаем');
+            localStorage.removeItem(POSTS_STORAGE_KEY);
+            return [];
+        }
+        
+        return parsed;
     } catch (e) {
-        console.error('Ошибка загрузки постов:', e);
+        console.error('community.js: ошибка парсинга постов:', e);
+        localStorage.removeItem(POSTS_STORAGE_KEY);
         return [];
     }
 }
 
-function loadSavedPosts() {
-    const feedList = document.querySelector('.feed__list');
-    if (!feedList) return;
+// ========================================
+// ВЫЧИСЛЕНИЕ ОТНОСИТЕЛЬНОГО ВРЕМЕНИ
+// ========================================
+function getRelativeTime(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
     
-    const savedPosts = getPostsFromStorage();
-    if (savedPosts.length === 0) return;
+    const MS_IN_MINUTE = 60 * 1000;
+    const MS_IN_HOUR = 60 * MS_IN_MINUTE;
+    const MS_IN_DAY = 24 * MS_IN_HOUR;
+    const MS_IN_WEEK = 7 * MS_IN_DAY;
     
-    // Вставляем сохранённые посты в начало ленты (новые сверху)
-    savedPosts.forEach(post => {
-        // Проверяем, нет ли уже такого поста (защита от дублирования)
-        if (document.getElementById(post.id)) return;
-        
-        const postHTML = buildPostHTML(post);
-        feedList.insertAdjacentHTML('afterbegin', postHTML);
-    });
+    if (diff < MS_IN_MINUTE) return 'Только что';
+    if (diff < MS_IN_HOUR) {
+        const minutes = Math.floor(diff / MS_IN_MINUTE);
+        return `${minutes} ${getMinutesWord(minutes)} назад`;
+    }
+    if (diff < MS_IN_DAY) {
+        const hours = Math.floor(diff / MS_IN_HOUR);
+        return `${hours} ${getHoursWord(hours)} назад`;
+    }
+    if (diff < MS_IN_WEEK) {
+        const days = Math.floor(diff / MS_IN_DAY);
+        return `${days} ${getDaysWord(days)} назад`;
+    }
     
-    console.log(`Загружено ${savedPosts.length} сохранённых постов`);
+    const date = new Date(timestamp);
+    const dayNum = date.getDate();
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 
+                    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    return `${dayNum} ${months[date.getMonth()]}`;
+}
+
+function getMinutesWord(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return 'минуту';
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'минуты';
+    return 'минут';
+}
+
+function getHoursWord(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return 'час';
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'часа';
+    return 'часов';
+}
+
+function getDaysWord(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return 'день';
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'дня';
+    return 'дней';
 }
 
 function buildPostHTML(post) {
     const likeSrc = post.liked ? likeFilled : likeOutline;
     return `
-        <article class="post" id="${post.id}" data-timestamp="${post.timestamp}">
+        <article class="post" id="${escapeHTML(post.id)}" data-timestamp="${post.timestamp}">
             <div class="post__header">
-                <div class="post__avatar ${post.avatarClass}">${post.initial}</div>
+                <div class="post__avatar ${escapeHTML(post.avatarClass)}">${escapeHTML(post.initial)}</div>
                 <div class="post__meta">
                     <div class="post__author">${escapeHTML(post.author)}</div>
-                    <div class="post__time">${post.time}</div>
+                    <div class="post__time">${escapeHTML(post.time)}</div>
                 </div>
             </div>
             <div class="post__content">
@@ -97,72 +232,27 @@ function buildPostHTML(post) {
 }
 
 // ========================================
-// ГЕНЕРАЦИЯ TIMESTAMP ДЛЯ ВСЕХ ПОСТОВ
+// ПАРСИНГ ВРЕМЕНИ ДЛЯ СТАТИЧЕСКИХ ПОСТОВ
 // ========================================
-function initPostTimestamps() {
-    const posts = document.querySelectorAll('.post');
-    posts.forEach((post) => {
-        // Если timestamp уже есть (у сохранённых постов) — пропускаем
-        if (post.dataset.timestamp) return;
-        
-        const timeEl = post.querySelector('.post__time');
-        if (!timeEl) {
-            // Если времени нет — случайное время в последние 3 дня
-            const randomOffset = Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000);
-            post.dataset.timestamp = Date.now() - randomOffset;
-            return;
-        }
-        
-        const timeText = timeEl.textContent.trim();
-        const timestamp = parseTimeString(timeText);
-        post.dataset.timestamp = timestamp;
-    });
-}
-
 function parseTimeString(timeText) {
     const now = Date.now();
     const lower = timeText.toLowerCase();
     
-    if (lower.includes('только что') || lower.includes('just now')) {
-        return now - 60000;
-    }
+    if (lower.includes('только что') || lower.includes('just now')) return now - 60000;
     
     const minutesMatch = lower.match(/(\d+)\s*минут/);
-    if (minutesMatch) {
-        return now - parseInt(minutesMatch[1]) * 60000;
-    }
-    
-    const minMatch = lower.match(/(\d+)\s*min/);
-    if (minMatch) {
-        return now - parseInt(minMatch[1]) * 60000;
-    }
+    if (minutesMatch) return now - parseInt(minutesMatch[1]) * 60000;
     
     const hoursMatch = lower.match(/(\d+)\s*час/);
-    if (hoursMatch) {
-        return now - parseInt(hoursMatch[1]) * 3600000;
-    }
+    if (hoursMatch) return now - parseInt(hoursMatch[1]) * 3600000;
     
-    const hourMatch = lower.match(/(\d+)\s*hour/);
-    if (hourMatch) {
-        return now - parseInt(hourMatch[1]) * 3600000;
-    }
-    
-    if (lower.includes('вчера') || lower.includes('yesterday')) {
-        return now - 24 * 3600000;
-    }
+    if (lower.includes('вчера') || lower.includes('yesterday')) return now - 24 * 3600000;
     
     const daysMatch = lower.match(/(\d+)\s*дн/);
-    if (daysMatch) {
-        return now - parseInt(daysMatch[1]) * 24 * 3600000;
-    }
+    if (daysMatch) return now - parseInt(daysMatch[1]) * 24 * 3600000;
     
-    const dayMatch = lower.match(/(\d+)\s*day/);
-    if (dayMatch) {
-        return now - parseInt(dayMatch[1]) * 24 * 3600000;
-    }
-    
-    const randomOffset = Math.floor(Math.random() * 2 * 24 * 3600000);
-    return now - randomOffset;
+    // Если не удалось распарсить — случайное время в последние 2 дня
+    return now - Math.floor(Math.random() * 2 * 24 * 3600000);
 }
 
 // ========================================
@@ -273,11 +363,11 @@ function renderSearchResults(container, results) {
 
     container.innerHTML = results
         .map((r) => `
-            <div class="community-search-result" data-post-id="${r.id}">
+            <div class="community-search-result" data-post-id="${escapeHTML(r.id)}">
                 <div class="community-search-result__icon">📝</div>
                 <div class="community-search-result__info">
-                    <div class="community-search-result__text">${r.text}</div>
-                    <div class="community-search-result__meta">${r.author} • ${r.time}</div>
+                    <div class="community-search-result__text">${escapeHTML(r.text)}</div>
+                    <div class="community-search-result__meta">${escapeHTML(r.author)} • ${escapeHTML(r.time)}</div>
                 </div>
             </div>
         `)
@@ -372,15 +462,15 @@ function openFilterModal() {
 function applyDateFilter(filter) {
     const posts = document.querySelectorAll('.post');
     const now = Date.now();
-    const day = 24 * 60 * 60 * 1000;
+    const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStartTs = todayStart.getTime();
 
-    const yesterdayStartTs = todayStartTs - day;
-    const weekStartTs = now - 7 * day;
-    const monthStartTs = now - 30 * day;
+    const yesterdayStartTs = todayStartTs - MS_IN_DAY;
+    const weekStartTs = now - 7 * MS_IN_DAY;
+    const monthStartTs = now - 30 * MS_IN_DAY;
 
     posts.forEach((post) => {
         const timestamp = parseInt(post.dataset.timestamp);
@@ -422,30 +512,36 @@ function restoreAllPosts() {
 }
 
 // ========================================
-// ЛАЙКИ (с сохранением состояния)
+// ЛАЙКИ
 // ========================================
 function initLikes() {
     const feedList = document.querySelector('.feed__list');
     if (!feedList) return;
+    
     feedList.addEventListener('click', (e) => {
         const likeBtn = e.target.closest('.post__like-btn');
         if (!likeBtn) return;
         e.preventDefault();
+        
         const countEl = likeBtn.querySelector('.post__like-count');
         const imgEl = likeBtn.querySelector('.post__like-icon');
-        if (!imgEl) return;
+        if (!imgEl || !countEl) return;
+        
         let count = parseInt(countEl.textContent.trim()) || 0;
+        const post = likeBtn.closest('.post');
+        
         if (likeBtn.classList.contains('post__like-btn--active')) {
             likeBtn.classList.remove('post__like-btn--active');
-            countEl.textContent = count - 1;
+            count = Math.max(0, count - 1);
             imgEl.src = likeOutline;
         } else {
             likeBtn.classList.add('post__like-btn--active');
-            countEl.textContent = count + 1;
+            count = count + 1;
             imgEl.src = likeFilled;
         }
-        // Сохраняем состояние лайка
-        saveLikeState(likeBtn.closest('.post'), likeBtn.classList.contains('post__like-btn--active'), count);
+        
+        countEl.textContent = count;
+        saveLikeState(post, likeBtn.classList.contains('post__like-btn--active'), count);
     });
 }
 
@@ -454,6 +550,7 @@ function saveLikeState(post, isLiked, count) {
     const postId = post.id;
     const savedPosts = getPostsFromStorage();
     const postIndex = savedPosts.findIndex(p => p.id === postId);
+    
     if (postIndex !== -1) {
         savedPosts[postIndex].liked = isLiked;
         savedPosts[postIndex].likes = count;
@@ -578,7 +675,7 @@ function createNotificationModal() {
                 </svg>
             </button>
             <div class="modal__body modal__body--centered">
-                <div class="notification-modal__icon"></div>
+                <div class="notification-modal__icon">⚠</div>
                 <h2 class="modal__title modal__title--centered" id="notification-title">Раздел в разработке</h2>
                 <p class="modal__text" id="notification-text">Этот функционал скоро будет доступен.</p>
             </div>
@@ -620,36 +717,30 @@ function closeNotificationModal() {
 }
 
 // ========================================
-// СОЗДАНИЕ ПОСТА (с сохранением)
+// СОЗДАНИЕ ПОСТА
 // ========================================
 function createNewPost(text, feedList) {
     const postId = 'post-' + Date.now();
     const timestamp = Date.now();
-    const timeString = 'Только что';
 
-    // Объект поста для сохранения
     const postObject = {
         id: postId,
         text: text,
         author: currentUser.name,
         avatarClass: currentUser.avatarClass,
         initial: currentUser.initial,
-        time: timeString,
         timestamp: timestamp,
         likes: 0,
         liked: false
     };
 
-    // Сохраняем в localStorage
     const savedPosts = getPostsFromStorage();
-    savedPosts.unshift(postObject); // Добавляем в начало
+    savedPosts.unshift(postObject);
     savePostsToStorage(savedPosts);
 
-    // Рендерим в ленту
-    const postHTML = buildPostHTML(postObject);
+    const postHTML = buildPostHTML({ ...postObject, time: 'Только что' });
     feedList.insertAdjacentHTML('afterbegin', postHTML);
     
-    // Анимация появления
     const newPost = document.getElementById(postId);
     if (newPost) {
         newPost.style.animation = 'fadeIn 0.5s ease-out';
@@ -660,6 +751,7 @@ function createNewPost(text, feedList) {
 // ESCAPE HTML
 // ========================================
 function escapeHTML(str) {
+    if (typeof str !== 'string') return '';
     return str.replace(/[&<>"']/g, tag => ({
         '&': '&amp;',
         '<': '&lt;',

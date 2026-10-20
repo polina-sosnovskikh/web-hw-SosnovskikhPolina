@@ -28,7 +28,9 @@ export function initRating() {
 
     // 1. Восстанавливаем сохранённую оценку за выбранный день
     const dayData = getDayData(viewDate);
-    if (dayData && dayData.rating) {
+    
+    // ИСПРАВЛЕНО: валидация rating — проверяем, что это число от 1 до 5
+    if (dayData && typeof dayData.rating === 'number' && dayData.rating >= 1 && dayData.rating <= 5) {
         selectedRating = dayData.rating;
         updateRatingUI(selectedRating);
     } else {
@@ -48,7 +50,7 @@ export function initRating() {
         
         // Возвращаем кнопке нормальный вид
         submitBtn.textContent = 'Готово';
-        submitBtn.style.cssText = ''; 
+        submitBtn.style.cssText = ''; // Сбрасываем inline-стили, чтобы вернулись из CSS
     } else {
         // Блокируем интерфейс (визуально и физически)
         ratingContainer.style.pointerEvents = 'none';
@@ -56,14 +58,12 @@ export function initRating() {
         
         // Превращаем кнопку в подсказку
         submitBtn.textContent = 'Оценивать самочувствие нужно день в день';
-        
         submitBtn.style.fontFamily = "'Montserrat', sans-serif";
-        
         submitBtn.style.backgroundColor = '#f0f0f0';
         submitBtn.style.color = '#888';
         submitBtn.style.cursor = 'default';
         submitBtn.style.fontSize = '0.85rem';
-        submitBtn.style.whiteSpace = 'normal';
+        submitBtn.style.whiteSpace = 'normal'; // Разрешаем перенос текста
         submitBtn.style.lineHeight = '1.3';
         submitBtn.style.height = 'auto';
         submitBtn.style.padding = '12px 16px';
