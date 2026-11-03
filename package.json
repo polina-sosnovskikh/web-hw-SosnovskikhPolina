@@ -1,0 +1,12 @@
+{
+  "name": "my-lovely-project",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+  "start": "parcel ./hw1/Project1/src/pages/*.html --open",
+  "build": "parcel build ./hw1/Project1/src/pages/*.html"
+},
+  "devDependencies": {
+    "parcel": "^2.16.4"
+  }
+}

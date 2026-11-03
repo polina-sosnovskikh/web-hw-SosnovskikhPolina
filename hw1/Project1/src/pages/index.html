@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Время Цвести — дневник самочувствия, прогноз и оценка состояния">
+  <link rel="icon" type="image/png" href="../assets/icon.png">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <title>Время Цвести</title>
+</head>
+<body>
+
+<input type="checkbox" id="menu-toggle" class="menu-toggle" hidden>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__inner">
+      <a class="header__logo" href="landing.html" aria-label="Время Цвести — главная страница">
+        <span class="header__logo-text">время цвести</span>
+      </a>
+      <nav class="nav nav--desktop" aria-label="Основная навигация">
+        <a class="nav__link nav__link--active" href="index.html" aria-current="page">Главная</a>
+        <a class="nav__link" href="forecast.html">Прогноз</a>
+        <a class="nav__link" href="map.html">Карта</a>
+        <a class="nav__link" href="community.html">Сообщество</a>
+        <a class="nav__link" href="settings.html">Настройки</a>
+      </nav>
+
+      <label for="menu-toggle" class="header__burger" aria-label="Открыть меню">
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+        <span class="header__burger-line"></span>
+      </label>
+    </div>
+  </header>
+
+  <!-- PAGE TITLE -->
+  <section class="page-title">
+    <div class="page-title__inner">
+    <h1 class="page-title__text">самочувствие, дневник и оценка состояния</h1>
+    <div class="page-title__actions">
+      <button class="page-title__btn" type="button" aria-label="Поиск">
+        <img class="page-title__btn-icon" src="../assets/search_main.png" alt="">
+      </button>
+    </div>
+    </div>
+  </section>
+
+  <main class="main main--dashboard">
+    
+    <!-- LEFT COLUMN -->
+    <div class="dashboard-state">
+      
+      <!-- SYMPTOMS LIST -->
+<section class="symptoms-section" aria-labelledby="symptoms-heading">
+  <h2 class="symptoms-section__title" id="symptoms-heading">Ваши симптомы</h2>
+  <div class="symptoms-accordion" id="symptoms-accordion">
+    <!-- Сюда JavaScript вставит аккордеон с категориями и симптомами -->
+  </div>
+      </section>
+
+      <!-- RATING SECTION -->
+     <section class="rating-section-main">
+  <div class="rating-section-main__header">
+    <h2 class="rating-section-main__title">Оценка состояния</h2>
+  </div>
+  <div class="rating-section-main__content">
+    <div class="rating-labels">
+      <span>Отличное</span>
+      <span>Ужасное</span>
+    </div>
+    <div class="rating-buttons" id="rating-buttons">
+      <button class="rating-btn" data-value="1">1</button>
+      <button class="rating-btn" data-value="2">2</button>
+      <button class="rating-btn" data-value="3">3</button>
+      <button class="rating-btn" data-value="4">4</button>
+      <button class="rating-btn" data-value="5">5</button>
+    </div>
+    <img class="rating-mascot" id="rating-mascot" alt="Маскот">
+    <button class="rating-submit" id="rating-submit">Готово</button>
+  </div>
+</section>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="dashboard-report">
+      
+      <!-- CALENDAR -->
+      <div class="calendar-with-report">
+  <section class="calendar-main" aria-label="Календарь">
+    <div class="calendar-main__header">
+      <button class="calendar-main__nav calendar-main__nav--prev" type="button" aria-label="Предыдущий месяц">‹</button>
+      <h2 class="calendar-main__title">Май 2024</h2>
+      <button class="calendar-main__nav calendar-main__nav--next" type="button" aria-label="Следующий месяц">›</button>
+    </div>
+    <!-- Оставляем пустым, JavaScript сам заполнит дни -->
+    <div class="calendar-main__grid"></div>
+  </section>
+
+            <!-- DOWNLOAD REPORT BUTTON -->
+    <button class="download-report" type="button">
+      <span class="download-report__text">Скачать отчёт</span>
+      <img class="report-download__icon" src="../assets/export_main.png" alt="">
+    </button>
+      </div>
+
+      <!-- MEDICATIONS -->
+      <section class="medications-main" aria-labelledby="medications-heading">
+        <div class="medications-main__header">
+          <h2 class="medications-main__title" id="medications-heading">приём лекарств</h2>
+          <span class="medications-main__badge" id="medications-badge">0/0 сегодня</span>
+  </div>
+  <div class="medications-list" id="medications-list">
+    <!-- JavaScript вставит лекарства -->
+  </div>
+</section>
+
+      <!-- TODAY'S SYMPTOMS -->
+      <section class="today-symptoms-main">
+  <div class="today-symptoms-main__header">
+    <h2 class="today-symptoms-main__title">Отмеченные симптомы</h2>
+  </div>
+  <div class="today-symptoms-grid" id="today-symptoms-list">
+    <!-- JavaScript вставит отмеченные симптомы -->
+  </div>
+</section>
+</div>
+  </main>
+
+  <label for="menu-toggle" class="mobile-overlay" aria-hidden="true"></label>
+
+  <!-- Боковое меню -->
+<nav class="mobile-menu" aria-label="Мобильная навигация">
+  <a class="mobile-menu__link mobile-menu__link--active" href="index.html">Главная</a>
+  <a class="mobile-menu__link" href="forecast.html">Прогноз</a>
+  <a class="mobile-menu__link" href="map.html">Карта</a>
+  <a class="mobile-menu__link" href="community.html">Сообщество</a>
+  <a class="mobile-menu__link" href="settings.html">Настройки</a>
+</nav>
+
+<script type="module" src="../js/app.js"></script>
+</body>
+</html>
