@@ -154,6 +154,7 @@ export function initSettings() {
     initToggles();
     initContactForm();
     initSurvey();
+    initNotificationSettings();
     console.log('Настройки инициализированы');
 }
 
@@ -416,6 +417,111 @@ function initSurvey() {
             checkboxes.forEach(cb => cb.checked = false);
         });
     }
+}
+
+// ========================================
+// NOTIFICATION API — УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ
+// ========================================
+// ========================================
+// NOTIFICATION API — УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ
+// ========================================
+function initNotificationSettings() {
+    // Ищем toggle по тексту соседнего label, а не по data-атрибуту
+    const notificationToggle = Array.from(document.querySelectorAll('.toggle__input')).find(toggle => {
+        const label = toggle.closest('.settings-menu__item')?.querySelector('.settings-menu__label');
+        return label && label.textContent.trim() === 'Уведомления';
+    });
+
+    if (!notificationToggle) {
+        console.warn('settings.js: toggle "Уведомления" не найден');
+        return;
+    }
+
+    // Проверяем протокол — Notification API не работает через file://
+    if (window.location.protocol === 'file:') {
+        console.warn('settings.js: Notification API не работает через file://. Используйте localhost или HTTPS.');
+        notificationToggle.addEventListener('change', async (e) => {
+            if (e.target.checked) {
+                e.target.checked = false;
+                await showSettingsAlert(
+                    'Уведомления недоступны',
+                    'Запустите сайт через локальный сервер (localhost) или HTTPS. Notification API не работает при открытии файла напрямую.'
+                );
+            }
+        });
+        return;
+    }
+
+    // Проверяем поддержку Notification API
+    if (!('Notification' in window)) {
+        console.warn('settings.js: Notification API не поддерживается браузером');
+        notificationToggle.disabled = true;
+        notificationToggle.checked = false;
+        return;
+    }
+
+    // Проверяем текущее состояние разрешения
+    const currentPermission = Notification.permission;
+    console.log('settings.js: текущее разрешение уведомлений:', currentPermission);
+
+    if (currentPermission === 'granted') {
+        notificationToggle.checked = true;
+        localStorage.setItem('setting_notifications', 'true');
+    } else if (currentPermission === 'denied') {
+        notificationToggle.checked = false;
+        notificationToggle.disabled = true;
+        localStorage.setItem('setting_notifications', 'false');
+    }
+
+    // Обработчик изменения toggle
+    notificationToggle.addEventListener('change', async (e) => {
+        const isEnabled = e.target.checked;
+
+        if (isEnabled) {
+            try {
+                const permission = await Notification.requestPermission();
+                console.log('settings.js: результат запроса разрешения:', permission);
+
+                if (permission === 'granted') {
+                    localStorage.setItem('setting_notifications', 'true');
+                    sendTestNotification();
+                } else {
+                    e.target.checked = false;
+                    localStorage.setItem('setting_notifications', 'false');
+
+                    if (permission === 'denied') {
+                        e.target.disabled = true;
+                        await showSettingsAlert(
+                            'Уведомления заблокированы',
+                            'Вы запретили уведомления. Разрешите их в настройках браузера (иконка замка в адресной строке).'
+                        );
+                    }
+                }
+            } catch (err) {
+                console.error('settings.js: ошибка запроса разрешения:', err);
+                e.target.checked = false;
+            }
+        } else {
+            localStorage.setItem('setting_notifications', 'false');
+        }
+    });
+}
+
+function sendTestNotification() {
+    if (Notification.permission !== 'granted') return;
+
+    const notification = new Notification('🌿 Время Цвести', {
+        body: 'Уведомления работают! Вы будете получать оповещения о высокой концентрации пыльцы.',
+        icon: 'assets/logo.png',
+        badge: 'assets/badge.png',
+        tag: 'test-notification',
+        requireInteraction: false,
+    });
+
+    notification.onclick = () => {
+        window.focus();
+        notification.close();
+    };
 }
 
 // ========================================
