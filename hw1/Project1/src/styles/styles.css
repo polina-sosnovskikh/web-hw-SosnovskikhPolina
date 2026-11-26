@@ -484,10 +484,10 @@ body {
 .post__avatar--m { background-color: var(--жёлтый); color: var(--чёрный); }
 .post__avatar--e { background-color: var(--красный); }
 .post__meta { flex: 1; min-width: 0; }
-.post__author { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-.post__time { font-size: 14px; color: var(--серый-темнее); opacity: 0.7; }
+.post__author { font-size: 16px; font-weight: 600; margin-bottom: 4px; font-family: 'Montserrat', sans-serif ;}
+.post__time { font-size: 14px; color: var(--серый-темнее); opacity: 0.7; font-family: 'Montserrat', sans-serif ;}
 .post__content { margin-bottom: var(--отступ-средний); }
-.post__text { font-size: 15px; line-height: 1.6; word-wrap: break-word; }
+.post__text { font-size: 15px; line-height: 1.6; word-wrap: break-word; font-family: 'Montserrat', sans-serif ; }
 .post__actions { display: flex; align-items: center; gap: var(--отступ-средний); padding-top: var(--отступ-средний); border-top: 1px solid var(--серый); flex-wrap: wrap; }
 
 .post__like-btn, .post__comment-btn {
@@ -827,8 +827,19 @@ body {
 .rating-section-main__header { margin-bottom: var(--отступ-средний); }
 .rating-section-main__title { font-family: 'Bimbo_num', cursive; font-size: 18px; margin: 0; }
 .rating-section-main__content { display: flex; flex-direction: column; align-items: center; gap: var(--отступ-большой); }
-.rating-scale { width: 100%; }
-.rating-labels { display: flex; justify-content: space-between; width: 100%; margin-bottom: var(--отступ-средний); font-size: 14px; opacity: 0.7; padding: 0 24px; box-sizing: border-box; }
+.rating-scale { width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; }
+.rating-labels {   display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 14px;
+  opacity: 0.7;
+  padding: 0 4px;
+  box-sizing: border-box; }
 .rating-buttons {  display: flex; justify-content: center; gap: 12px; flex-wrap: nowrap; width: 100%; max-width: 320px; margin: 0 auto; }
 .rating-btn { width: 48px; height: 48px; min-width: 48px; min-height: 48px; border: none; font-family: 'Montserrat', sans-serif; border-radius: var(--радиус-круг); background-color: var(--белый); font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
 .rating-btn:hover { transform: scale(1.1); }
@@ -1786,4 +1797,55 @@ body {
 datalist {
     position: absolute;
     z-index: 100;
+}
+
+/* Сообщение после оценки */
+.rating-saved-message {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  color: var(--серый-темнее);
+  text-align: center;
+  margin-top: 8px;
+  opacity: 0.7;
+  line-height: 1.3;
+  max-width: 280px;
+  padding: 0 16px;
+}
+
+/* Неактивная кнопка */
+.rating-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Неактивное состояние опроса */
+.survey--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.survey--disabled .survey__rating-btn,
+.survey--disabled .survey__checkbox-input,
+.survey--disabled .survey__submit-btn {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Сообщение после прохождения опроса */
+.survey__completed-message {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    color: var(--серый-темнее);
+    text-align: center;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background-color: var(--прозрачный-желтый);
+    border-radius: var(--радиус-маленький);
+    line-height: 1.4;
+    display: none;
+}
+
+.survey__completed-message[style*="display: block"] {
+    display: block !important;
 }

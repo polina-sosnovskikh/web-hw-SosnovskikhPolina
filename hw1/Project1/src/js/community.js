@@ -4,8 +4,11 @@ const likeFilled = new URL('../assets/like_checked.png', import.meta.url).href;
 const commentOutline = new URL('../assets/add_comment.png', import.meta.url).href;
 const commentFilled = new URL('../assets/add_comment_checked.png', import.meta.url).href;
 
-// Ключ для localStorage
+import { api } from './api.js';
+
+// Ключи для localStorage
 const POSTS_STORAGE_KEY = 'vremya_tsveti_community_posts';
+const LIKES_STORAGE_KEY = 'vremya_tsveti_likes';
 
 const currentUser = {
     name: 'Вы',
@@ -13,110 +16,183 @@ const currentUser = {
     initial: 'В'
 };
 
-export function initCommunity() {
-    if (!document.querySelector('.feed__list')) return;
+// Русские посты по теме аллергии (fallback если сервер недоступен)
+const RUSSIAN_POSTS = [
+    {
+        id: 'ru-1',
+        author: 'Анна Светлова',
+        text: 'Как вы спасаетесь от берёзы? В этом году пыльца просто везде 🌳🤧',
+        timestamp: Date.now() - 2 * 3600000,
+        likes: 24,
+        liked: false
+    },
+    {
+        id: 'ru-2',
+        author: 'Максим Котов',
+        text: 'Нашёл отличный очиститель воздуха с HEPA-фильтром! Стало намного легче дышать ночью. Всем советую не открывать окна до обеда.',
+        timestamp: Date.now() - 5 * 3600000,
+        likes: 18,
+        liked: false
+    },
+    {
+        id: 'ru-3',
+        author: 'Елена П.',
+        text: 'Кто-нибудь пробовал солевые пещеры для облегчения симптомов? Есть ли смысл идти в пик цветения берёзы?',
+        timestamp: Date.now() - 24 * 3600000,
+        likes: 12,
+        liked: false
+    },
+    {
+        id: 'ru-4',
+        author: 'Игорь Л.',
+        text: 'Аллерголог назначил курс АСИТ. Кто проходил — поделитесь опытом, сильно ли помогает в долгосрочной перспективе?',
+        timestamp: Date.now() - 2 * 24 * 3600000,
+        likes: 31,
+        liked: false
+    },
+    {
+        id: 'ru-5',
+        author: 'Ольга М.',
+        text: 'Сегодня индекс пыльцы зашкаливает. Закрыла все окна, включила кондиционер, приняла цетиризин. Держитесь, друзья! 🌿',
+        timestamp: Date.now() - 3 * 24 * 3600000,
+        likes: 27,
+        liked: false
+    }
+];
+
+// ========================================
+// НОРМАЛИЗАЦИЯ ПОСТОВ (назначение аватаров)
+// ========================================
+function normalizePost(post) {
+    if (!post.avatarClass) {
+        // Назначаем цвет аватара на основе имени автора
+        const authorInitial = post.author ? post.author[0].toLowerCase() : 'a';
+        
+        // Распределяем по трём цветам: мятный, жёлтый, красный
+        if (['а', 'a', 'е', 'е', 'о', 'о'].includes(authorInitial)) {
+            post.avatarClass = 'post__avatar--a'; // мятный
+        } else if (['м', 'm', 'и', 'и', 'д', 'д'].includes(authorInitial)) {
+            post.avatarClass = 'post__avatar--m'; // жёлтый
+        } else {
+            post.avatarClass = 'post__avatar--e'; // красный
+        }
+    }
     
-    // 1. Собираем все посты (статические из HTML + сохранённые из localStorage)
-    const allPosts = collectAllPosts();
+    // Добавляем инициал если нет
+    if (!post.initial) {
+        post.initial = post.author ? post.author[0] : '?';
+    }
     
-    // 2. Сортируем: новые сверху (по убыванию timestamp)
-    allPosts.sort((a, b) => b.timestamp - a.timestamp);
-    
-    // 3. Очищаем ленту
-    const feedList = document.querySelector('.feed__list');
-    feedList.innerHTML = '';
-    
-    // 4. Вставляем посты в правильном порядке
-    allPosts.forEach(post => {
-        const postHTML = buildPostHTML(post);
-        feedList.insertAdjacentHTML('beforeend', postHTML);
-    });
-    
-    // 5. Инициализируем интерактивность
-    initLikes();
-    initComments();
-    initFab();
-    initHeaderButtons();
-    createPostModal();
-    createNotificationModal();
-    
-    console.log('Сообщество инициализировано, постов:', allPosts.length);
+    return post;
 }
 
 // ========================================
-// СБОР ВСЕХ ПОСТОВ (статические + сохранённые)
+// ИНИЦИАЛИЗАЦИЯ СООБЩЕСТВА
+// ========================================
+export async function initCommunity() {
+    if (!document.querySelector('.feed__list')) return;
+
+    const feedList = document.querySelector('.feed__list');
+    feedList.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.6;">Загружаем ленту…</div>';
+
+    try {
+        // Пробуем загрузить с сервера
+        let posts = await api.getPosts();
+        
+        // Если сервер вернул пустой массив или ошибку
+        if (!posts || posts.length === 0) {
+            // Проверяем localStorage
+            const existing = getPostsFromStorage();
+            if (existing.length === 0) {
+                // Если и в localStorage пусто — используем русские посты
+                savePostsToStorage(RUSSIAN_POSTS);
+            }
+            posts = getPostsFromStorage();
+        } else {
+            // Сохраняем серверные посты в localStorage
+            savePostsToStorage(posts);
+        }
+
+        // Нормализуем все посты (добавляем avatarClass)
+        posts = posts.map(normalizePost);
+
+        // Собираем все посты (из localStorage + серверные)
+        const allPosts = collectAllPosts();
+        allPosts.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Рендерим
+        feedList.innerHTML = '';
+        allPosts.forEach(post => {
+            feedList.insertAdjacentHTML('beforeend', buildPostHTML(post));
+        });
+
+        // Инициализируем интерактивность
+        initLikes();
+        initComments();
+        initFab();
+        initHeaderButtons();
+        createPostModal();
+        createNotificationModal();
+
+        console.log('Сообщество инициализировано, постов:', allPosts.length);
+    } catch (error) {
+        console.warn('Бэкенд недоступен, используем локальное хранилище:', error);
+        
+        // Fallback на localStorage
+        const existing = getPostsFromStorage();
+        if (existing.length === 0) {
+            savePostsToStorage(RUSSIAN_POSTS);
+        }
+        
+        const allPosts = collectAllPosts().map(normalizePost);
+        allPosts.sort((a, b) => b.timestamp - a.timestamp);
+        
+        feedList.innerHTML = '';
+        allPosts.forEach(post => {
+            feedList.insertAdjacentHTML('beforeend', buildPostHTML(post));
+        });
+        
+        initLikes();
+        initComments();
+        initFab();
+        initHeaderButtons();
+        createPostModal();
+        createNotificationModal();
+    }
+}
+
+// ========================================
+// СБОР ВСЕХ ПОСТОВ
 // ========================================
 function collectAllPosts() {
     const posts = [];
     const seenIds = new Set();
-    let staticPostCounter = 0;
-    
-    // 1. Собираем статические посты из HTML
-    const staticPosts = document.querySelectorAll('.post');
-    staticPosts.forEach(post => {
-        // Генерируем id, если его нет
-        let id = post.id;
-        if (!id) {
-            staticPostCounter++;
-            id = 'static-post-' + staticPostCounter;
-            post.id = id; // Сохраняем в DOM
-        }
-        
-        if (seenIds.has(id)) return;
-        
-        const timeEl = post.querySelector('.post__time');
-        const authorEl = post.querySelector('.post__author');
-        const textEl = post.querySelector('.post__text');
-        const avatarEl = post.querySelector('.post__avatar');
-        const likeBtn = post.querySelector('.post__like-btn');
-        const likeCountEl = post.querySelector('.post__like-count');
-        
-        if (!timeEl || !authorEl || !textEl) return;
-        
-        // Вычисляем timestamp из текста времени
-        const timestamp = parseTimeString(timeEl.textContent.trim());
-        
-        // Извлекаем класс аватара и инициал
-        let avatarClass = 'post__avatar--a';
-        let initial = '?';
-        if (avatarEl) {
-            // Получаем все классы кроме 'post__avatar'
-            const classes = avatarEl.className.split(' ').filter(c => c !== 'post__avatar');
-            avatarClass = classes.length > 0 ? classes[0] : 'post__avatar--a';
-            initial = avatarEl.textContent.trim() || '?';
-        }
-        
-        posts.push({
-            id: id,
-            author: authorEl.textContent.trim(),
-            time: timeEl.textContent.trim(),
-            text: textEl.textContent.trim(),
-            avatarClass: avatarClass,
-            initial: initial,
-            timestamp: timestamp,
-            likes: parseInt(likeCountEl?.textContent.trim()) || 0,
-            liked: likeBtn?.classList.contains('post__like-btn--active') || false
-        });
-        
-        seenIds.add(id);
-    });
-    
-    // 2. Добавляем сохранённые посты из localStorage
+    const savedLikes = getLikesFromStorage();
     const savedPosts = getPostsFromStorage();
+
     savedPosts.forEach(post => {
         if (!post || typeof post !== 'object') return;
         if (!post.id || seenIds.has(post.id)) return;
         if (!post.text || typeof post.text !== 'string') return;
         if (!post.timestamp || typeof post.timestamp !== 'number') return;
-        
+
+        // Восстанавливаем лайки
+        const likeState = savedLikes[post.id];
+        if (likeState) {
+            post.liked = likeState.liked;
+            post.likes = likeState.count;
+        }
+
+        // Нормализуем (добавляем avatarClass если нет)
+        normalizePost(post);
+
         posts.push({
             ...post,
-            time: getRelativeTime(post.timestamp) // Вычисляем актуальное время
+            time: getRelativeTime(post.timestamp)
         });
-        
         seenIds.add(post.id);
     });
-    
+
     return posts;
 }
 
@@ -135,15 +211,12 @@ function getPostsFromStorage() {
     try {
         const raw = localStorage.getItem(POSTS_STORAGE_KEY);
         if (!raw) return [];
-        
         const parsed = JSON.parse(raw);
-        
         if (!Array.isArray(parsed)) {
             console.warn('community.js: данные постов повреждены, очищаем');
             localStorage.removeItem(POSTS_STORAGE_KEY);
             return [];
         }
-        
         return parsed;
     } catch (e) {
         console.error('community.js: ошибка парсинга постов:', e);
@@ -153,17 +226,33 @@ function getPostsFromStorage() {
 }
 
 // ========================================
+// СОХРАНЕНИЕ И ЗАГРУЗКА ЛАЙКОВ
+// ========================================
+function getLikesFromStorage() {
+    try {
+        return JSON.parse(localStorage.getItem(LIKES_STORAGE_KEY)) || {};
+    } catch {
+        return {};
+    }
+}
+
+function saveLikeToStorage(postId, isLiked, count) {
+    const likes = getLikesFromStorage();
+    likes[postId] = { liked: isLiked, count };
+    localStorage.setItem(LIKES_STORAGE_KEY, JSON.stringify(likes));
+}
+
+// ========================================
 // ВЫЧИСЛЕНИЕ ОТНОСИТЕЛЬНОГО ВРЕМЕНИ
 // ========================================
 function getRelativeTime(timestamp) {
     const now = Date.now();
     const diff = now - timestamp;
-    
     const MS_IN_MINUTE = 60 * 1000;
     const MS_IN_HOUR = 60 * MS_IN_MINUTE;
     const MS_IN_DAY = 24 * MS_IN_HOUR;
     const MS_IN_WEEK = 7 * MS_IN_DAY;
-    
+
     if (diff < MS_IN_MINUTE) return 'Только что';
     if (diff < MS_IN_HOUR) {
         const minutes = Math.floor(diff / MS_IN_MINUTE);
@@ -177,10 +266,9 @@ function getRelativeTime(timestamp) {
         const days = Math.floor(diff / MS_IN_DAY);
         return `${days} ${getDaysWord(days)} назад`;
     }
-    
     const date = new Date(timestamp);
     const dayNum = date.getDate();
-    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
                     'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
     return `${dayNum} ${months[date.getMonth()]}`;
 }
@@ -203,14 +291,20 @@ function getDaysWord(n) {
     return 'дней';
 }
 
+// ========================================
+// РЕНДЕР ПОСТА
+// ========================================
 function buildPostHTML(post) {
     const likeSrc = post.liked ? likeFilled : likeOutline;
+    const initial = post.initial || post.author?.[0] || '?';
+    const avatarClass = post.avatarClass || 'post__avatar--a';
+    
     return `
-        <article class="post" id="${escapeHTML(post.id)}" data-timestamp="${post.timestamp}">
+        <article class="post" data-post-id="${post.id}" data-timestamp="${post.timestamp}">
             <div class="post__header">
-                <div class="post__avatar ${escapeHTML(post.avatarClass)}">${escapeHTML(post.initial)}</div>
+                <div class="post__avatar ${avatarClass}">${initial}</div>
                 <div class="post__meta">
-                    <div class="post__author">${escapeHTML(post.author)}</div>
+                    <div class="post__author">${escapeHTML(post.author || 'Неизвестно')}</div>
                     <div class="post__time">${escapeHTML(post.time)}</div>
                 </div>
             </div>
@@ -218,12 +312,12 @@ function buildPostHTML(post) {
                 <p class="post__text">${escapeHTML(post.text)}</p>
             </div>
             <div class="post__actions">
-                <button class="post__like-btn ${post.liked ? 'post__like-btn--active' : ''}" type="button" aria-label="Нравится">
-                    <img class="post__like-icon" src="${likeSrc}" alt="like" width="20" height="20">
+                <button class="post__like-btn ${post.liked ? 'post__like-btn--active' : ''}" type="button">
+                    <img class="post__like-icon" src="${likeSrc}" width="20" height="20">
                     <span class="post__like-count">${post.likes || 0}</span>
                 </button>
-                <button class="post__comment-btn" type="button" aria-label="Комментировать">
-                    <img class="post__comment-icon" src="${commentOutline}" alt="comment" width="20" height="20">
+                <button class="post__comment-btn" type="button">
+                    <img class="post__comment-icon" src="${commentOutline}" width="20" height="20">
                     <span class="post__comment-count">0 комментариев</span>
                 </button>
             </div>
@@ -232,31 +326,75 @@ function buildPostHTML(post) {
 }
 
 // ========================================
-// ПАРСИНГ ВРЕМЕНИ ДЛЯ СТАТИЧЕСКИХ ПОСТОВ
+// ЛАЙКИ
 // ========================================
-function parseTimeString(timeText) {
-    const now = Date.now();
-    const lower = timeText.toLowerCase();
-    
-    if (lower.includes('только что') || lower.includes('just now')) return now - 60000;
-    
-    const minutesMatch = lower.match(/(\d+)\s*минут/);
-    if (minutesMatch) return now - parseInt(minutesMatch[1]) * 60000;
-    
-    const hoursMatch = lower.match(/(\d+)\s*час/);
-    if (hoursMatch) return now - parseInt(hoursMatch[1]) * 3600000;
-    
-    if (lower.includes('вчера') || lower.includes('yesterday')) return now - 24 * 3600000;
-    
-    const daysMatch = lower.match(/(\d+)\s*дн/);
-    if (daysMatch) return now - parseInt(daysMatch[1]) * 24 * 3600000;
-    
-    // Если не удалось распарсить — случайное время в последние 2 дня
-    return now - Math.floor(Math.random() * 2 * 24 * 3600000);
+function initLikes() {
+    const feedList = document.querySelector('.feed__list');
+    if (!feedList) return;
+
+    feedList.addEventListener('click', async (e) => {
+        const likeBtn = e.target.closest('.post__like-btn');
+        if (!likeBtn) return;
+        e.preventDefault();
+
+        const postId = likeBtn.closest('.post').dataset.postId;
+        const countEl = likeBtn.querySelector('.post__like-count');
+        const imgEl = likeBtn.querySelector('.post__like-icon');
+        const isCurrentlyLiked = likeBtn.classList.contains('post__like-btn--active');
+        
+        const newLiked = !isCurrentlyLiked;
+        const newCount = newLiked ? (parseInt(countEl.textContent) || 0) + 1 : Math.max(0, (parseInt(countEl.textContent) || 0) - 1);
+
+        if (newLiked) {
+            likeBtn.classList.add('post__like-btn--active');
+            imgEl.src = likeFilled;
+        } else {
+            likeBtn.classList.remove('post__like-btn--active');
+            imgEl.src = likeOutline;
+        }
+        countEl.textContent = newCount;
+
+        // Сохраняем в localStorage
+        saveLikeToStorage(postId, newLiked, newCount);
+
+        // Отправляем на сервер (если доступен)
+        try {
+            await api.toggleLike(postId);
+        } catch (error) {
+            console.warn('Не удалось обновить лайк на сервере:', error);
+        }
+    });
 }
 
 // ========================================
-// КНОПКИ В ШАПКЕ СООБЩЕСТВА
+// КОММЕНТАРИИ
+// ========================================
+function initComments() {
+    const feedList = document.querySelector('.feed__list');
+    if (!feedList) return;
+
+    feedList.addEventListener('click', (e) => {
+        if (e.target.closest('.post__comment-btn')) {
+            e.preventDefault();
+            showNotificationModal(
+                'Раздел в разработке',
+                'Приносим свои извинения — комментарии скоро будут доступны. Мы работаем над тем, чтобы вы могли отвечать на посты других пользователей и делиться опытом.'
+            );
+        }
+    });
+}
+
+// ========================================
+// FAB
+// ========================================
+function initFab() {
+    const fab = document.querySelector('.fab');
+    if (!fab) return;
+    fab.addEventListener('click', () => openPostModal());
+}
+
+// ========================================
+// КНОПКИ В ШАПКЕ
 // ========================================
 function initHeaderButtons() {
     const searchBtn = document.querySelector('.page-header__btn[aria-label="Поиск"]');
@@ -304,6 +442,7 @@ function openSearchModal() {
 
     const input = overlay.querySelector('#community-search-input');
     const results = overlay.querySelector('#community-search-results');
+
     setTimeout(() => input.focus(), 100);
 
     input.addEventListener('input', () => {
@@ -323,8 +462,10 @@ function openSearchModal() {
             document.body.style.overflow = '';
         }, 300);
     };
+
     overlay.querySelector('.community-search-modal__close').addEventListener('click', close);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
     const handleEsc = (e) => {
         if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handleEsc); }
     };
@@ -341,10 +482,9 @@ function searchPosts(query) {
         if (!textEl) return;
         const text = textEl.textContent.toLowerCase();
         const allWordsFound = words.every(word => text.includes(word));
-        
         if (allWordsFound) {
             results.push({
-                id: post.id,
+                id: post.dataset.postId,
                 text: textEl.textContent,
                 author: post.querySelector('.post__author')?.textContent || 'Неизвестно',
                 time: post.querySelector('.post__time')?.textContent || '',
@@ -376,7 +516,7 @@ function renderSearchResults(container, results) {
     container.querySelectorAll('.community-search-result').forEach((el) => {
         el.addEventListener('click', () => {
             const postId = el.dataset.postId;
-            const post = document.getElementById(postId);
+            const post = document.querySelector(`[data-post-id="${postId}"]`);
             if (post) {
                 post.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 post.style.transition = 'background 0.3s';
@@ -451,8 +591,10 @@ function openFilterModal() {
             document.body.style.overflow = '';
         }, 300);
     };
+
     overlay.querySelector('.community-filter-modal__close').addEventListener('click', close);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
     const handleEsc = (e) => {
         if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handleEsc); }
     };
@@ -467,21 +609,18 @@ function applyDateFilter(filter) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStartTs = todayStart.getTime();
-
     const yesterdayStartTs = todayStartTs - MS_IN_DAY;
     const weekStartTs = now - 7 * MS_IN_DAY;
     const monthStartTs = now - 30 * MS_IN_DAY;
 
     posts.forEach((post) => {
         const timestamp = parseInt(post.dataset.timestamp);
-        
         if (isNaN(timestamp)) {
             post.style.display = '';
             return;
         }
 
         let show = false;
-
         switch (filter) {
             case 'all':
                 show = true;
@@ -512,106 +651,37 @@ function restoreAllPosts() {
 }
 
 // ========================================
-// ЛАЙКИ
-// ========================================
-function initLikes() {
-    const feedList = document.querySelector('.feed__list');
-    if (!feedList) return;
-    
-    feedList.addEventListener('click', (e) => {
-        const likeBtn = e.target.closest('.post__like-btn');
-        if (!likeBtn) return;
-        e.preventDefault();
-        
-        const countEl = likeBtn.querySelector('.post__like-count');
-        const imgEl = likeBtn.querySelector('.post__like-icon');
-        if (!imgEl || !countEl) return;
-        
-        let count = parseInt(countEl.textContent.trim()) || 0;
-        const post = likeBtn.closest('.post');
-        
-        if (likeBtn.classList.contains('post__like-btn--active')) {
-            likeBtn.classList.remove('post__like-btn--active');
-            count = Math.max(0, count - 1);
-            imgEl.src = likeOutline;
-        } else {
-            likeBtn.classList.add('post__like-btn--active');
-            count = count + 1;
-            imgEl.src = likeFilled;
-        }
-        
-        countEl.textContent = count;
-        saveLikeState(post, likeBtn.classList.contains('post__like-btn--active'), count);
-    });
-}
-
-function saveLikeState(post, isLiked, count) {
-    if (!post) return;
-    const postId = post.id;
-    const savedPosts = getPostsFromStorage();
-    const postIndex = savedPosts.findIndex(p => p.id === postId);
-    
-    if (postIndex !== -1) {
-        savedPosts[postIndex].liked = isLiked;
-        savedPosts[postIndex].likes = count;
-        savePostsToStorage(savedPosts);
-    }
-}
-
-// ========================================
-// КОММЕНТАРИИ
-// ========================================
-function initComments() {
-    const feedList = document.querySelector('.feed__list');
-    if (!feedList) return;
-    feedList.addEventListener('click', (e) => {
-        const commentBtn = e.target.closest('.post__comment-btn');
-        if (!commentBtn) return;
-        e.preventDefault();
-        showNotificationModal(
-            'Раздел в разработке',
-            'Приносим свои извинения — комментарии скоро будут доступны. Мы работаем над тем, чтобы вы могли отвечать на посты других пользователей и делиться опытом.'
-        );
-    });
-}
-
-// ========================================
-// FAB
-// ========================================
-function initFab() {
-    const fab = document.querySelector('.fab');
-    if (!fab) return;
-    fab.addEventListener('click', () => openPostModal());
-}
-
-// ========================================
 // МОДАЛКА СОЗДАНИЯ ПОСТА
 // ========================================
 function createPostModal() {
-    const modalHTML = `<div class="modal-overlay" id="post-modal-overlay">
-        <div class="modal" id="post-modal">
-            <button class="modal__close" id="modal-close-btn" type="button" aria-label="Закрыть">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-            <div class="modal__header">
-                <h2 class="modal__title">Новый пост</h2>
-                <p class="modal__subtitle">Расскажите о своём самочувствии или задайте вопрос</p>
-            </div>
-            <div class="modal__body">
-                <textarea class="modal__textarea" id="modal-textarea" placeholder="Как вы себя чувствуете сегодня?" maxlength="500"></textarea>
-                <div class="modal__counter">
-                    <span id="modal-counter-text">0</span> / 500
+    if (document.getElementById('post-modal-overlay')) return;
+
+    const modalHTML = `
+        <div class="modal-overlay" id="post-modal-overlay">
+            <div class="modal" id="post-modal">
+                <button class="modal__close" id="modal-close-btn" type="button" aria-label="Закрыть">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="modal__header">
+                    <h2 class="modal__title">Новый пост</h2>
+                    <p class="modal__subtitle">Расскажите о своём самочувствии или задайте вопрос</p>
+                </div>
+                <div class="modal__body">
+                    <textarea class="modal__textarea" id="modal-textarea" placeholder="Как вы себя чувствуете сегодня?" maxlength="500"></textarea>
+                    <div class="modal__counter">
+                        <span id="modal-counter-text">0</span> / 500
+                    </div>
+                </div>
+                <div class="modal__footer">
+                    <button class="modal__btn modal__btn--cancel" id="modal-cancel-btn" type="button">Отмена</button>
+                    <button class="modal__btn modal__btn--submit" id="modal-submit-btn" type="button" disabled>Опубликовать</button>
                 </div>
             </div>
-            <div class="modal__footer">
-                <button class="modal__btn modal__btn--cancel" id="modal-cancel-btn" type="button">Отмена</button>
-                <button class="modal__btn modal__btn--submit" id="modal-submit-btn" type="button" disabled>Опубликовать</button>
-            </div>
         </div>
-    </div>`;
+    `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
     const overlay = document.getElementById('post-modal-overlay');
@@ -624,21 +694,54 @@ function createPostModal() {
     closeBtn.addEventListener('click', closePostModal);
     cancelBtn.addEventListener('click', closePostModal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closePostModal(); });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && overlay.classList.contains('modal-overlay--active')) closePostModal();
     });
+
     textarea.addEventListener('input', () => {
         const length = textarea.value.trim().length;
         counterText.textContent = textarea.value.length;
         submitBtn.disabled = length === 0;
     });
-    submitBtn.addEventListener('click', () => {
+
+    submitBtn.addEventListener('click', async () => {
         const text = textarea.value.trim();
-        if (text) {
-            const feedList = document.querySelector('.feed__list');
-            if (feedList) createNewPost(text, feedList);
-            closePostModal();
+        if (!text) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Публикуем…';
+
+        const feedList = document.querySelector('.feed__list');
+        const newPost = {
+            id: 'post-' + Date.now(),
+            text: text,
+            author: currentUser.name,
+            avatarClass: currentUser.avatarClass,
+            initial: currentUser.initial,
+            timestamp: Date.now(),
+            likes: 0,
+            liked: false
+        };
+
+        // Сохраняем в localStorage
+        const savedPosts = getPostsFromStorage();
+        savedPosts.unshift(newPost);
+        savePostsToStorage(savedPosts);
+
+        // Рендерим в начало ленты
+        if (feedList) {
+            feedList.insertAdjacentHTML('afterbegin', buildPostHTML({ ...newPost, time: 'Только что' }));
         }
+
+        // Отправляем на сервер (если доступен)
+        try {
+            await api.createPost(text);
+        } catch (error) {
+            console.warn('Не удалось опубликовать на сервере, но пост сохранён локально:', error);
+        }
+
+        closePostModal();
     });
 }
 
@@ -647,12 +750,15 @@ function openPostModal() {
     const textarea = document.getElementById('modal-textarea');
     const submitBtn = document.getElementById('modal-submit-btn');
     if (!overlay) return;
+
     overlay.classList.add('modal-overlay--active');
     document.body.style.overflow = 'hidden';
     setTimeout(() => textarea.focus(), 100);
+
     textarea.value = '';
     document.getElementById('modal-counter-text').textContent = '0';
     submitBtn.disabled = true;
+    submitBtn.textContent = 'Опубликовать';
 }
 
 function closePostModal() {
@@ -666,24 +772,28 @@ function closePostModal() {
 // МОДАЛКА УВЕДОМЛЕНИЯ
 // ========================================
 function createNotificationModal() {
-    const modalHTML = `<div class="modal-overlay" id="notification-modal-overlay">
-        <div class="modal modal--notification" id="notification-modal">
-            <button class="modal__close" id="notification-close-btn" type="button" aria-label="Закрыть">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-            <div class="modal__body modal__body--centered">
-                <div class="notification-modal__icon">⚠</div>
-                <h2 class="modal__title modal__title--centered" id="notification-title">Раздел в разработке</h2>
-                <p class="modal__text" id="notification-text">Этот функционал скоро будет доступен.</p>
-            </div>
-            <div class="modal__footer modal__footer--centered">
-                <button class="modal__btn modal__btn--submit" id="notification-ok-btn" type="button">Понятно</button>
+    if (document.getElementById('notification-modal-overlay')) return;
+
+    const modalHTML = `
+        <div class="modal-overlay" id="notification-modal-overlay">
+            <div class="modal modal--notification" id="notification-modal">
+                <button class="modal__close" id="notification-close-btn" type="button" aria-label="Закрыть">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="modal__body modal__body--centered">
+                    <div class="notification-modal__icon">⚠</div>
+                    <h2 class="modal__title modal__title--centered" id="notification-title">Раздел в разработке</h2>
+                    <p class="modal__text" id="notification-text">Этот функционал скоро будет доступен.</p>
+                </div>
+                <div class="modal__footer modal__footer--centered">
+                    <button class="modal__btn modal__btn--submit" id="notification-ok-btn" type="button">Понятно</button>
+                </div>
             </div>
         </div>
-    </div>`;
+    `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
     const overlay = document.getElementById('notification-modal-overlay');
@@ -693,6 +803,7 @@ function createNotificationModal() {
     closeBtn.addEventListener('click', closeNotificationModal);
     okBtn.addEventListener('click', closeNotificationModal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeNotificationModal(); });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && overlay.classList.contains('modal-overlay--active')) closeNotificationModal();
     });
@@ -717,37 +828,6 @@ function closeNotificationModal() {
 }
 
 // ========================================
-// СОЗДАНИЕ ПОСТА
-// ========================================
-function createNewPost(text, feedList) {
-    const postId = 'post-' + Date.now();
-    const timestamp = Date.now();
-
-    const postObject = {
-        id: postId,
-        text: text,
-        author: currentUser.name,
-        avatarClass: currentUser.avatarClass,
-        initial: currentUser.initial,
-        timestamp: timestamp,
-        likes: 0,
-        liked: false
-    };
-
-    const savedPosts = getPostsFromStorage();
-    savedPosts.unshift(postObject);
-    savePostsToStorage(savedPosts);
-
-    const postHTML = buildPostHTML({ ...postObject, time: 'Только что' });
-    feedList.insertAdjacentHTML('afterbegin', postHTML);
-    
-    const newPost = document.getElementById(postId);
-    if (newPost) {
-        newPost.style.animation = 'fadeIn 0.5s ease-out';
-    }
-}
-
-// ========================================
 // ESCAPE HTML
 // ========================================
 function escapeHTML(str) {
@@ -756,7 +836,7 @@ function escapeHTML(str) {
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
+        '"': '&quot;',
+        "'": '&#39;'
     }[tag]));
 }
