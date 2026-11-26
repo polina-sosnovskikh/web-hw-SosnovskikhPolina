@@ -1,0 +1,528 @@
+openapi: 3.0.3
+info:
+  title: Время Цвести API
+  description: API для приложения мониторинга аллергии и самочувствия
+  version: 1.0.0
+  contact:
+    name: Polina Sosnovskikh
+
+servers:
+  - url: http://localhost:3001
+    description: Локальный сервер разработки
+
+tags:
+  - name: Ratings
+    description: Оценки самочувствия
+  - name: Posts
+    description: Посты сообщества
+  - name: Settings
+    description: Настройки пользователя
+
+paths:
+  /api/ratings:
+    get:
+      tags:
+        - Ratings
+      summary: Получить все оценки самочувствия
+      description: Возвращает массив всех оценок состояния пользователя
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rating'
+        '500':
+          description: Ошибка сервера
+
+    post:
+      tags:
+        - Ratings
+      summary: Сохранить новую оценку самочувствия
+      description: Добавляет новую оценку состояния за указанную дату
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingInput'
+      responses:
+        '201':
+          description: Оценка успешно сохранена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/posts:
+    get:
+      tags:
+        - Posts
+      summary: Получить все посты сообщества
+      description: Возвращает массив всех постов, отсортированных по дате
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+        '500':
+          description: Ошибка сервера
+
+    post:
+      tags:
+        - Posts
+      summary: Создать новый пост в сообществе
+      description: Публикует новый пост в ленту сообщества
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInput'
+      responses:
+        '201':
+          description: Пост успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/posts/{id}/like:
+    put:
+      tags:
+        - Posts
+      summary: Переключить лайк поста
+      description: Добавляет или убирает лайк у поста
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID поста
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Лайк успешно переключён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '404':
+          description: Пост не найден
+        '500':
+          description: Ошибка сервера
+
+  /api/settings:
+    get:
+      tags:
+        - Settings
+      summary: Получить все настройки пользователя
+      description: Возвращает полный объект настроек пользователя
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '500':
+          description: Ошибка сервера
+
+    put:
+      tags:
+        - Settings
+      summary: Обновить настройки пользователя
+      description: Частичное обновление настроек (мерж с существующими)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userName:
+                  type: string
+                allergens:
+                  type: array
+                  items:
+                    type: string
+                toggles:
+                  type: object
+                  additionalProperties:
+                    type: boolean
+                survey:
+                  $ref: '#/components/schemas/Survey'
+                contactEmail:
+                  type: string
+      responses:
+        '200':
+          description: Настройки успешно обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/settings/name:
+    put:
+      tags:
+        - Settings
+      summary: Обновить имя пользователя
+      description: Изменяет имя пользователя в профиле
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Полина"
+      responses:
+        '200':
+          description: Имя успешно обновлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/settings/allergens:
+    get:
+      tags:
+        - Settings
+      summary: Получить список аллергенов пользователя
+      description: Возвращает массив аллергенов пользователя
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '500':
+          description: Ошибка сервера
+
+    put:
+      tags:
+        - Settings
+      summary: Обновить список аллергенов
+      description: Заменяет весь список аллергенов пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - allergens
+              properties:
+                allergens:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Берёза", "Пыльца", "Амброзия"]
+      responses:
+        '200':
+          description: Аллергены успешно обновлены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allergens:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/settings/toggles:
+    put:
+      tags:
+        - Settings
+      summary: Обновить переключатели настроек
+      description: Частичное обновление переключателей (мерж с существующими)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - toggles
+              properties:
+                toggles:
+                  type: object
+                  additionalProperties:
+                    type: boolean
+                  example:
+                    "Уведомления": true
+                    "Звуковые оповещения": false
+      responses:
+        '200':
+          description: Переключатели успешно обновлены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  toggles:
+                    type: object
+                    additionalProperties:
+                      type: boolean
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/settings/survey:
+    get:
+      tags:
+        - Settings
+      summary: Получить данные опроса
+      description: Возвращает данные последнего пройденного опроса
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Survey'
+                  - type: 'null'
+        '500':
+          description: Ошибка сервера
+
+    post:
+      tags:
+        - Settings
+      summary: Сохранить результаты опроса
+      description: Сохраняет ответы пользователя на опрос
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SurveyInput'
+      responses:
+        '201':
+          description: Опрос успешно сохранён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Survey'
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+  /api/settings/contact:
+    post:
+      tags:
+        - Settings
+      summary: Сохранить контактный email
+      description: Сохраняет email для связи с поддержкой
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "polina@example.com"
+      responses:
+        '201':
+          description: Email успешно сохранён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    format: email
+        '400':
+          description: Неверный запрос
+        '500':
+          description: Ошибка сервера
+
+components:
+  schemas:
+    Rating:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1732617600000
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        date:
+          type: string
+          format: date
+          example: "2026-11-26"
+        userId:
+          type: string
+          example: "polina"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-11-26T10:00:00.000Z"
+
+    RatingInput:
+      type: object
+      required:
+        - rating
+        - date
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        date:
+          type: string
+          format: date
+          example: "2026-11-26"
+        userId:
+          type: string
+          example: "polina"
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        text:
+          type: string
+          example: "Как вы спасаетесь от берёзы?"
+        author:
+          type: string
+          example: "Анна Светлова"
+        timestamp:
+          type: integer
+          example: 1732617600000
+        likes:
+          type: integer
+          example: 24
+        liked:
+          type: boolean
+          example: false
+
+    PostInput:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          maxLength: 500
+          example: "Сегодня заложило нос"
+        author:
+          type: string
+          example: "Вы"
+        userId:
+          type: string
+          example: "polina"
+
+    Settings:
+      type: object
+      properties:
+        userName:
+          type: string
+          example: "Полина"
+        allergens:
+          type: array
+          items:
+            type: string
+          example: ["Берёза", "Пыльца"]
+        toggles:
+          type: object
+          additionalProperties:
+            type: boolean
+          example:
+            "Уведомления": true
+            "Звуковые оповещения": false
+        survey:
+          $ref: '#/components/schemas/Survey'
+        contactEmail:
+          type: string
+          format: email
+          example: "polina@example.com"
+        updatedAt:
+          type: string
+          format: date-time
+
+    Survey:
+      type: object
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        useful:
+          type: array
+          items:
+            type: string
+          example: ["Удобный интерфейс", "Прогноз"]
+        submittedAt:
+          type: string
+          format: date-time
+          example: "2026-11-26T10:00:00.000Z"
+
+    SurveyInput:
+      type: object
+      required:
+        - rating
+        - useful
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        useful:
+          type: array
+          items:
+            type: string
+          example: ["Удобный интерфейс", "Прогноз"]
